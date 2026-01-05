@@ -1,0 +1,274 @@
+/**
+ * ProductDetailsScreen - Product Information
+ * 
+ * @author Achraf Oubakouz - UI/UX Design
+ * @author Reda Karrach - Cart Integration
+ */
+
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Dimensions,
+  Alert,
+} from 'react-native';
+import { useCart } from '../context/CartContext';
+import Header from '../components/Header';
+import Button from '../components/Button';
+
+const { width } = Dimensions.get('window');
+
+/**
+ * ProductDetailsScreen Component
+ * Displays detailed product information
+ */
+const ProductDetailsScreen = ({ route, navigation }) => {
+  const { product } = route.params;
+  const { addToCart, isInCart, getItemQuantity } = useCart();
+  const [quantity, setQuantity] = useState(1);
+
+  const productInCart = isInCart(product.id);
+  const currentQuantity = getItemQuantity(product.id);
+
+  /**
+   * Handle add to cart
+   */
+  const handleAddToCart = () => {
+    addToCart(product, quantity);
+    Alert.alert(
+      'Success',
+      `${product.title} added to cart`,
+      [
+        {
+          text: 'Continue Shopping',
+          style: 'cancel',
+        },
+        {
+          text: 'View Cart',
+          onPress: () => navigation.navigate('Cart'),
+        },
+      ]
+    );
+  };
+
+  /**
+   * Increment quantity
+   */
+  const incrementQuantity = () => {
+    setQuantity((prev) => prev + 1);
+  };
+
+  /**
+   * Decrement quantity
+   */
+  const decrementQuantity = () => {
+    if (quantity > 1) {
+      setQuantity((prev) => prev - 1);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <Header title="Product Details" showBack />
+      
+      <ScrollView style={styles.content}>
+        {/* Product Image */}
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: product.image }}
+            style={styles.image}
+            resizeMode="contain"
+          />
+        </View>
+
+        {/* Product Info */}
+        <View style={styles.infoContainer}>
+          {/* Category */}
+          <Text style={styles.category}>{product.category}</Text>
+
+          {/* Title */}
+          <Text style={styles.title}>{product.title}</Text>
+
+          {/* Price */}
+          <Text style={styles.price}>${product.price.toFixed(2)}</Text>
+
+          {/* Rating */}
+          {product.rating && (
+            <View style={styles.ratingContainer}>
+              <View style={styles.ratingBadge}>
+                <Text style={styles.ratingScore}>{product.rating.rate}</Text>
+              </View>
+              <Text style={styles.ratingText}>
+                ({product.rating.count} reviews)
+              </Text>
+            </View>
+          )}
+
+          {/* Description */}
+          <View style={styles.descriptionContainer}>
+            <Text style={styles.descriptionTitle}>Description</Text>
+            <Text style={styles.description}>{product.description}</Text>
+          </View>
+
+          {/* Quantity Selector */}
+          <View style={styles.quantityContainer}>
+            <Text style={styles.quantityLabel}>Quantity</Text>
+            <View style={styles.quantitySelector}>
+              <Button
+                title="-"
+                onPress={decrementQuantity}
+                variant="outline"
+                size="small"
+                disabled={quantity <= 1}
+                style={styles.quantityButton}
+              />
+              <Text style={styles.quantityText}>{quantity}</Text>
+              <Button
+                title="+"
+                onPress={incrementQuantity}
+                variant="outline"
+                size="small"
+                style={styles.quantityButton}
+              />
+            </View>
+          </View>
+
+          {/* Cart Status */}
+          {productInCart && (
+            <View style={styles.cartStatus}>
+              <View style={styles.checkIcon}>
+                <Text style={styles.checkIconText}>✓</Text>
+              </View>
+              <Text style={styles.cartStatusText}>
+                {currentQuantity} in cart
+              </Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Add to Cart Button */}
+      <View style={styles.footer}>
+        <Button
+          title={productInCart ? 'Add More to Cart' : 'Add to Cart'}
+          onPress={handleAddToCart}
+          fullWidth
+          size="large"
+        />
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  content: {
+    flex: 1,
+  },
+  imageContainer: {
+    width: width,
+    height: width,
+    backgroundColor: '#f9fafb',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  infoContainer: {
+    padding: 20,
+  },
+  category: {
+    fontSize: 12,
+    color: '#6b7280',
+    textTransform: 'uppercase',
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 12,
+    lineHeight: 32,
+  },
+  price: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#2563eb',
+    marginBottom: 16,
+  },
+  ratingContainer: {
+    marginBottom: 20,
+  },
+  ratingText: {
+    fontSize: 16,
+    color: '#374151',
+  },
+  descriptionContainer: {
+    marginBottom: 24,
+  },
+  descriptionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 8,
+  },
+  description: {
+    fontSize: 16,
+    color: '#4b5563',
+    lineHeight: 24,
+  },
+  quantityContainer: {
+    marginBottom: 16,
+  },
+  quantityLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 12,
+  },
+  quantitySelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  quantityButton: {
+    width: 48,
+  },
+  quantityText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginHorizontal: 24,
+    minWidth: 40,
+    textAlign: 'center',
+  },
+  cartStatus: {
+    backgroundColor: '#d1fae5',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  cartStatusText: {
+    color: '#065f46',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  footer: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    backgroundColor: '#fff',
+  },
+});
+
+export default ProductDetailsScreen;
