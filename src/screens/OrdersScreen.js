@@ -1,8 +1,7 @@
 /**
  * OrdersScreen - Order History
  * 
- * @author Sara Bellaly - Order Management Logic
- * @author Achraf Oubakouz - Order UI Design
+ 
  */
 
 import React, { useState, useEffect } from 'react';
@@ -18,10 +17,7 @@ import { ordersStorage } from '../services/storage';
 import Header from '../components/Header';
 import Loader from '../components/Loader';
 
-/**
- * OrdersScreen Component
- * Displays user's order history
- */
+
 const OrdersScreen = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,9 +27,7 @@ const OrdersScreen = () => {
     loadOrders();
   }, []);
 
-  /**
-   * Load orders from storage
-   */
+  
   const loadOrders = async () => {
     try {
       const storedOrders = await ordersStorage.getOrders();
@@ -46,17 +40,13 @@ const OrdersScreen = () => {
     }
   };
 
-  /**
-   * Handle refresh
-   */
+  
   const onRefresh = () => {
     setRefreshing(true);
     loadOrders();
   };
 
-  /**
-   * Format date
-   */
+ 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -68,9 +58,7 @@ const OrdersScreen = () => {
     });
   };
 
-  /**
-   * Get status color
-   */
+ 
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending':
@@ -88,9 +76,6 @@ const OrdersScreen = () => {
     }
   };
 
-  /**
-   * Render order item
-   */
   const renderOrderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.orderCard}
@@ -157,9 +142,7 @@ const OrdersScreen = () => {
     </TouchableOpacity>
   );
 
-  /**
-   * Render empty state
-   */
+  
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyIcon}>📦</Text>

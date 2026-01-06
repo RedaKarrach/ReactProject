@@ -1,8 +1,7 @@
 /**
  * SQLite Database Service
  * 
- * @author Reda Karrach - Database Architecture
- * @author Sara Bellaly - Implementation
+
  * 
  * Manages SQLite database operations for the e-commerce app.
  * Handles users, products, cart, orders, and favorites.

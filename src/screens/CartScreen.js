@@ -1,10 +1,4 @@
-/**
- * CartScreen - Shopping Cart Management
- * 
- * @author Reda Karrach - Cart Logic & State
- * @author Achraf Oubakouz - UI Design
- * @author Sara Bellaly - Checkout Integration
- */
+
 
 import React from 'react';
 import {
@@ -21,15 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import Header from '../components/Header';
 import Button from '../components/Button';
 
-/** * CartScreen - Shopping Cart Management
- * 
- * @author Achraf Oubakouz - Cart UI Design
- * @author Reda Karrach - Cart Logic & Checkout
- */
 
-/** * CartScreen Component
- * Displays shopping cart with items and checkout
- */
 const CartScreen = ({ navigation }) => {
   const {
     cartItems,
@@ -42,9 +28,7 @@ const CartScreen = ({ navigation }) => {
   } = useCart();
   const { user } = useAuth();
 
-  /**
-   * Handle remove item
-   */
+ 
   const handleRemoveItem = (productId, productName) => {
     Alert.alert(
       'Remove Item',
@@ -60,9 +44,7 @@ const CartScreen = ({ navigation }) => {
     );
   };
 
-  /**
-   * Handle clear cart
-   */
+  
   const handleClearCart = () => {
     Alert.alert(
       'Clear Cart',
@@ -78,9 +60,7 @@ const CartScreen = ({ navigation }) => {
     );
   };
 
-  /**
-   * Handle checkout
-   */
+  
   const handleCheckout = async () => {
     // Check if cart is empty
     if (cartItems.length === 0) {
@@ -150,9 +130,7 @@ const CartScreen = ({ navigation }) => {
     );
   };
 
-  /**
-   * Render cart item
-   */
+ 
   const renderCartItem = ({ item }) => (
     <View style={styles.cartItem}>
       <Image source={{ uri: item.image }} style={styles.itemImage} />
@@ -194,9 +172,7 @@ const CartScreen = ({ navigation }) => {
     </View>
   );
 
-  /**
-   * Render empty cart
-   */
+  
   const renderEmptyCart = () => (
     <View style={styles.emptyContainer}>
       <View style={styles.emptyIconContainer}>
@@ -212,9 +188,7 @@ const CartScreen = ({ navigation }) => {
     </View>
   );
 
-  /**
-   * Render footer with total and checkout
-   */
+  
   const renderFooter = () => {
     if (cartItems.length === 0) return null;
 

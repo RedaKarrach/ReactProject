@@ -1,26 +1,9 @@
-/**
- * API Service Layer
- * 
- * @author Reda Karrach - API Architecture
- * @author Sara Bellaly - Integration & Error Handling
- * 
- * Centralized API client for all backend communications.
- * Includes interceptors, error handling, and service methods.
- */
 
 import axios from 'axios';
 import { ProductModel } from './models';
 import { mergeProductsWithSeed } from './seedProducts';
 
-/**
- * API Service Layer
- * Handles all HTTP requests and API communication
- * 
- * @author Reda Karrach - API Architecture
- * @author Sara Bellaly - Integration & Error Handling
- */
 
-// Base API configuration - FakeStore API (vraie API publique)
 const API_BASE_URL = 'https://fakestoreapi.com';
 
 // Create axios instance with default config

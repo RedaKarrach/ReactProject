@@ -1,8 +1,7 @@
 /**
  * EditProfileScreen - Edit User Profile
  * 
- * @author Reda Karrach - Profile Edit Logic
- * @author Achraf Oubakouz - UI Design
+
  */
 
 import React, { useState } from 'react';
@@ -19,10 +18,7 @@ import Header from '../components/Header';
 import Input from '../components/Input';
 import Button from '../components/Button';
 
-/**
- * EditProfileScreen Component
- * Allows users to edit their profile information
- */
+
 const EditProfileScreen = ({ navigation }) => {
   const { user, updateProfile } = useAuth();
   const [username, setUsername] = useState(user?.username || '');
@@ -32,9 +28,7 @@ const EditProfileScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  /**
-   * Validate form inputs
-   */
+ 
   const validateForm = () => {
     const newErrors = {};
 
@@ -58,9 +52,7 @@ const EditProfileScreen = ({ navigation }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  /**
-   * Handle save profile
-   */
+ 
   const handleSaveProfile = async () => {
     if (!validateForm()) {
       return;

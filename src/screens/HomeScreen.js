@@ -1,10 +1,4 @@
-/**
- * HomeScreen - Product Listing
- * 
- * @author Achraf Oubakouz - UI/UX Design
- * @author Reda Karrach - Logic & Integration
- * @author Sara Bellaly - API Integration
- */
+
 
 import React, { useEffect, useState } from 'react';
 import {
@@ -21,15 +15,7 @@ import ProductCard from '../components/ProductCard';
 import Header from '../components/Header';
 import Loader from '../components/Loader';
 
-/** * HomeScreen - Product Listing & Browse
- * 
- * @author Achraf Oubakouz - UI/UX Implementation
- * @author Reda Karrach - Data Integration
- */
 
-/** * HomeScreen Component
- * Displays list of products in a grid layout
- */
 const HomeScreen = ({ navigation }) => {
   const { getCartItemCount } = useCart();
   const [products, setProducts] = useState([]);
@@ -41,9 +27,7 @@ const HomeScreen = ({ navigation }) => {
     fetchProducts();
   }, []);
 
-  /**
-   * Fetch products from API avec cache SQLite
-   */
+
   const fetchProducts = async () => {
     try {
       setError(null);
@@ -59,9 +43,7 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Handle pull to refresh - force refresh depuis l'API
-   */
+  
   const onRefresh = async () => {
     setRefreshing(true);
     try {
@@ -78,16 +60,12 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Navigate to product details
-   */
+  
   const navigateToProductDetails = (product) => {
     navigation.navigate('ProductDetails', { product });
   };
 
-  /**
-   * Render product item
-   */
+  
   const renderProductItem = ({ item }) => (
     <ProductCard
       product={item}
@@ -95,9 +73,7 @@ const HomeScreen = ({ navigation }) => {
     />
   );
 
-  /**
-   * Render cart badge
-   */
+  
   const renderCartBadge = () => {
     const itemCount = getCartItemCount();
     
@@ -119,9 +95,7 @@ const HomeScreen = ({ navigation }) => {
     );
   };
 
-  /**
-   * Render empty state
-   */
+  
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <View style={styles.emptyIconContainer}>
@@ -131,9 +105,7 @@ const HomeScreen = ({ navigation }) => {
     </View>
   );
 
-  /**
-   * Render error state
-   */
+  
   const renderErrorState = () => (
     <View style={styles.errorState}>
       <View style={styles.errorIconContainer}>

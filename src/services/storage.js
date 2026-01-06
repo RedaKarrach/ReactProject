@@ -1,12 +1,4 @@
-/**
- * Local Storage Service
- * 
- * @author Sara Bellaly - Lead Implementation
- * @author Reda Karrach - Architecture Design
- * 
- * Handles all AsyncStorage operations for data persistence.
- * Provides clean abstraction for auth, cart, orders, and favorites storage.
- */
+
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 

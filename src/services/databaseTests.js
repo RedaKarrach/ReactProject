@@ -1,12 +1,4 @@
-/**
- * Database Test & Demo Script
- * 
- * @author Reda Karrach
- * @author Sara Bellaly
- * 
- * Utility script to test and demonstrate database functionality.
- * Use this for development and testing purposes.
- */
+
 
 import database from './database';
 

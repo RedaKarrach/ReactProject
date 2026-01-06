@@ -1,8 +1,7 @@
 /**
  * CategoriesScreen - Browse Products by Category
  * 
- * @author Reda Karrach - Implementation
- * @author Achraf Oubakouz - UI Design
+ 
  */
 
 import React, { useEffect, useState } from 'react';

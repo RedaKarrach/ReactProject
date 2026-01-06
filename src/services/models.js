@@ -1,12 +1,4 @@
-/**
- * Database Models
- * 
- * @author Reda Karrach - Model Architecture
- * @author Sara Bellaly - Implementation
- * 
- * High-level models for database operations.
- * Provides clean API for working with database entities.
- */
+
 
 import database from './database';
 import { hashPassword, verifyPassword } from '../utils/auth';

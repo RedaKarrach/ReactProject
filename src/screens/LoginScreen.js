@@ -1,9 +1,4 @@
-/**
- * LoginScreen - User Authentication
- * 
- * @author Reda Karrach - Authentication Logic
- * @author Achraf Oubakouz - UI Design
- */
+
 
 import React, { useState } from 'react';
 import {
@@ -19,10 +14,7 @@ import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
 
-/**
- * LoginScreen Component
- * Handles user authentication
- */
+
 const LoginScreen = ({ navigation }) => {
   const { login, error: authError } = useAuth();
   const [email, setEmail] = useState('');
@@ -30,9 +22,7 @@ const LoginScreen = ({ navigation }) => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
-  /**
-   * Validate form inputs
-   */
+  
   const validateForm = () => {
     const newErrors = {};
 
@@ -52,9 +42,7 @@ const LoginScreen = ({ navigation }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  /**
-   * Handle login
-   */
+  
   const handleLogin = async () => {
     if (!validateForm()) {
       return;
@@ -74,9 +62,7 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Navigate to register screen
-   */
+  
   const navigateToRegister = () => {
     navigation.navigate('Register');
   };

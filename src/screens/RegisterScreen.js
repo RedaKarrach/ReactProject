@@ -1,10 +1,3 @@
-/**
- * RegisterScreen - User Registration
- * 
- * @author Reda Karrach - Registration Logic
- * @author Achraf Oubakouz - Form UI Design
- * @author Sara Bellaly - Validation
- */
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -64,9 +57,7 @@ const RegisterScreen = ({ navigation }) => {
     ]).start();
   }, []);
 
-  /**
-   * Validate form inputs
-   */
+
   const validateForm = () => {
     const newErrors = {};
 
@@ -98,9 +89,7 @@ const RegisterScreen = ({ navigation }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  /**
-   * Handle registration
-   */
+  
   const handleRegister = async () => {
     if (!validateForm()) {
       return;
@@ -120,9 +109,7 @@ const RegisterScreen = ({ navigation }) => {
     }
   };
 
-  /**
-   * Navigate to login screen
-   */
+  
   const navigateToLogin = () => {
     navigation.goBack();
   };
