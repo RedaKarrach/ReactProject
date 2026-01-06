@@ -6,7 +6,7 @@
  * @author Sara Bellaly - Validation
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  TouchableOpacity,
+  Animated,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
@@ -32,6 +34,38 @@ const RegisterScreen = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+
+  // Animations (mount + stagger)
+  const cardAnim = useRef(new Animated.Value(0)).current; // opacity + translateY
+  const avatarScale = useRef(new Animated.Value(0)).current; // bounce
+  const headerOpacity = useRef(new Animated.Value(0)).current;
+  const inputAnims = [
+    useRef(new Animated.Value(0)).current,
+    useRef(new Animated.Value(0)).current,
+    useRef(new Animated.Value(0)).current,
+    useRef(new Animated.Value(0)).current,
+  ];
+  const footerAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.sequence([
+      Animated.spring(avatarScale, {
+        toValue: 1,
+        useNativeDriver: true,
+        friction: 8,
+        tension: 60,
+      }),
+      Animated.parallel([
+        Animated.timing(cardAnim, { toValue: 1, duration: 420, useNativeDriver: true }),
+        Animated.timing(headerOpacity, { toValue: 1, duration: 420, useNativeDriver: true }),
+        Animated.stagger(
+          110,
+          inputAnims.map((a) => Animated.timing(a, { toValue: 1, duration: 360, useNativeDriver: true }))
+        ),
+        Animated.timing(footerAnim, { toValue: 1, duration: 360, useNativeDriver: true }),
+      ]),
+    ]).start();
+  }, []);
 
   /**
    * Validate form inputs
@@ -105,69 +139,88 @@ const RegisterScreen = ({ navigation }) => {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.content}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Sign up to get started</Text>
-          </View>
+        <View style={styles.backgroundDecorLeft} />
+        <View style={styles.backgroundDecorRight} />
 
-          {/* Form */}
-          <View style={styles.form}>
-            <Input
-              label="Full Name"
-              value={name}
-              onChangeText={setName}
-              placeholder="Enter your full name"
-              error={errors.name}
-            />
+        <View style={styles.centered}>
+          <View style={styles.card}>
+            {/* Brand / Avatar */}
+            <View style={styles.avatarContainer}>
+              <Text style={styles.avatarEmoji}>�️</Text>
+            </View>
 
-            <Input
-              label="Email"
-              value={email}
-              onChangeText={setEmail}
-              placeholder="Enter your email"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              error={errors.email}
-            />
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={styles.title}>Create Account</Text>
+              <Text style={styles.subtitle}>Join us and start shopping</Text>
+            </View>
 
-            <Input
-              label="Password"
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Create a password"
-              secureTextEntry
-              error={errors.password}
-            />
+            {/* Form */}
+            <View style={styles.form}>
+              <Input
+                label="Full Name"
+                value={name}
+                onChangeText={setName}
+                placeholder="Enter your full name"
+                error={errors.name}
+              />
 
-            <Input
-              label="Confirm Password"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              placeholder="Confirm your password"
-              secureTextEntry
-              error={errors.confirmPassword}
-            />
+              <Input
+                label="Email"
+                value={email}
+                onChangeText={setEmail}
+                placeholder="Enter your email"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                error={errors.email}
+              />
 
-            <Button
-              title="Sign Up"
-              onPress={handleRegister}
-              loading={loading}
-              fullWidth
-              style={styles.registerButton}
-            />
-          </View>
+              <Input
+                label="Password"
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Create a password"
+                secureTextEntry
+                error={errors.password}
+              />
 
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Already have an account? </Text>
-            <Button
-              title="Sign In"
-              onPress={navigateToLogin}
-              variant="outline"
-              size="small"
-            />
+              <Input
+                label="Confirm Password"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                placeholder="Confirm your password"
+                secureTextEntry
+                error={errors.confirmPassword}
+              />
+
+              <Button
+                title="Create Account"
+                onPress={handleRegister}
+                loading={loading}
+                fullWidth
+                style={styles.registerButton}
+              />
+
+              <View style={styles.termsRow}>
+                <Text style={styles.termsText}>By signing up you agree to our </Text>
+                <TouchableOpacity onPress={() => Alert.alert('Terms', 'Open Terms & Privacy')}>
+                  <Text style={styles.linkText}>Terms & Privacy</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Footer */}
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Already have an account? </Text>
+              <Button
+                title="Sign In"
+                onPress={navigateToLogin}
+                variant="outline"
+                size="small"
+                style={styles.signInButton}
+                textStyle={styles.signInText}
+              />
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -178,43 +231,143 @@ const RegisterScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#0f172a',
   },
   scrollContent: {
     flexGrow: 1,
+    paddingVertical: 20,
   },
-  content: {
+  backgroundDecorLeft: {
+    position: 'absolute',
+    top: -120,
+    left: -40,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: '#6d28d9',
+    opacity: 0.16,
+    transform: [{ rotate: '15deg' }],
+  },
+  backgroundDecorRight: {
+    position: 'absolute',
+    bottom: -100,
+    right: -60,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: '#ff6b6b',
+    opacity: 0.10,
+    transform: [{ rotate: '-20deg' }],
+  },
+  centered: {
     flex: 1,
-    padding: 24,
     justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 40,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 24,
+    elevation: 6,
+  },
+  avatarContainer: {
+    alignSelf: 'center',
+    marginTop: -56,
+    marginBottom: 12,
+    width: 104,
+    height: 104,
+    borderRadius: 52,
+    backgroundColor: '#5B21B6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  avatarEmoji: {
+    fontSize: 42,
+    color: '#ffffff',
+    fontWeight: '700',
   },
   header: {
-    marginBottom: 40,
+    marginBottom: 20,
     alignItems: 'center',
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 8,
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: 14,
+    color: '#64748b',
   },
   form: {
-    marginBottom: 24,
+    marginTop: 8,
   },
   registerButton: {
     marginTop: 8,
+    backgroundColor: '#5B21B6',
+    borderRadius: 14,
+    paddingVertical: 14,
+    shadowColor: '#5B21B6',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.16,
+    shadowRadius: 14,
+    elevation: 6,
   },
-  footer: {
+  termsRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 12,
+    justifyContent: 'center',
+  },
+  termsText: {
+    fontSize: 12,
+    color: '#94a3b8',
+  },
+  linkText: {
+    fontSize: 12,
+    color: '#C4B5FD',
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+  },
+
+  footer: {
+    marginTop: 18,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   footerText: {
     fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 12,
+    color: '#d6ccff',
+    marginRight: 8,
+  },
+  signInButton: {
+    borderColor: '#5B21B6',
+    borderWidth: 0,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    backgroundColor: '#5B21B6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  signInText: {
+    color: '#ffffff',
+    fontWeight: '700',
   },
 });
 

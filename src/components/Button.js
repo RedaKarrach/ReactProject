@@ -5,12 +5,13 @@
  * @author Reda Karrach - Component Architecture
  */
 
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   TouchableOpacity,
   Text,
   StyleSheet,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 
 /**
@@ -26,6 +27,7 @@ const Button = ({
   loading = false,
   fullWidth = false,
   style,
+  textStyle,
 }) => {
   const getButtonStyle = () => {
     const styles = [buttonStyles.button];
@@ -81,25 +83,55 @@ const Button = ({
       styles.push(buttonStyles.textOutline);
     }
 
+    // Custom text style
+    if (textStyle) {
+      styles.push(textStyle);
+    }
+
     return styles;
   };
 
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    if (disabled || loading) return;
+    Animated.spring(scale, {
+      toValue: 0.975,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 2,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 20,
+      bounciness: 2,
+    }).start();
+  };
+
   return (
-    <TouchableOpacity
-      style={getButtonStyle()}
-      onPress={onPress}
-      disabled={disabled || loading}
-      activeOpacity={0.8}
-    >
-      {loading ? (
-        <ActivityIndicator
-          color={variant === 'outline' ? '#2563eb' : '#fff'}
-          size="small"
-        />
-      ) : (
-        <Text style={getTextStyle()}>{title}</Text>
-      )}
-    </TouchableOpacity>
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <TouchableOpacity
+        style={getButtonStyle()}
+        onPress={onPress}
+        disabled={disabled || loading}
+        activeOpacity={0.8}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        {loading ? (
+          <ActivityIndicator
+            color={variant === 'outline' ? '#2563eb' : '#fff'}
+            size="small"
+          />
+        ) : (
+          <Text style={getTextStyle()}>{title}</Text>
+        )}
+      </TouchableOpacity>
+    </Animated.View>
   );
 };
 
