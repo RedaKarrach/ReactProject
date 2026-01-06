@@ -10,6 +10,7 @@
 
 import axios from 'axios';
 import { ProductModel } from './models';
+import { mergeProductsWithSeed } from './seedProducts';
 
 /**
  * API Service Layer
@@ -76,14 +77,19 @@ export const productAPI = {
         const cachedProducts = await ProductModel.getAll();
         if (cachedProducts && cachedProducts.length > 0) {
           console.log('📦 Produits chargés depuis le cache SQLite');
-          return cachedProducts;
+          // Merge with seed products for more variety
+          const mergedProducts = mergeProductsWithSeed(cachedProducts);
+          return mergedProducts;
         }
       }
 
       // Sinon, récupérer depuis l'API
       console.log('🌐 Récupération des produits depuis l\'API...');
       const response = await apiClient.get('/products');
-      const products = response.data;
+      let products = response.data;
+
+      // Merge with seed products for more variety
+      products = mergeProductsWithSeed(products);
 
       // Sauvegarder dans le cache SQLite
       if (products && products.length > 0) {

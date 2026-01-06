@@ -124,7 +124,7 @@ const Button = ({
       >
         {loading ? (
           <ActivityIndicator
-            color={variant === 'outline' ? '#2563eb' : '#fff'}
+            color={variant === 'outline' ? '#5B21B6' : '#fff'}
             size="small"
           />
         ) : (
@@ -145,7 +145,7 @@ const buttonStyles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   primary: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#5B21B6',
   },
   secondary: {
     backgroundColor: '#6b7280',
@@ -153,14 +153,14 @@ const buttonStyles = StyleSheet.create({
   outline: {
     backgroundColor: 'transparent',
     borderWidth: 2,
-    borderColor: '#2563eb',
+    borderColor: '#5B21B6',
   },
   danger: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#ff6b6b',
   },
   disabled: {
-    backgroundColor: '#d1d5db',
-    opacity: 0.6,
+    backgroundColor: '#94a3b8',
+    opacity: 0.5,
   },
   small: {
     paddingVertical: 8,
@@ -185,7 +185,7 @@ const buttonStyles = StyleSheet.create({
     fontSize: 18,
   },
   textOutline: {
-    color: '#2563eb',
+    color: '#5B21B6',
   },
 });
 

@@ -197,6 +197,10 @@ const userOperations = {
         fields.push('username = ?');
         values.push(updates.username);
       }
+      if (updates.email !== undefined) {
+        fields.push('email = ?');
+        values.push(updates.email);
+      }
       if (updates.phone !== undefined) {
         fields.push('phone = ?');
         values.push(updates.phone);
@@ -211,14 +215,15 @@ const userOperations = {
       fields.push('updated_at = CURRENT_TIMESTAMP');
       values.push(id);
       
-      await database.runAsync(
-        `UPDATE users SET ${fields.join(', ')} WHERE id = ?`,
-        values
-      );
+      const query = `UPDATE users SET ${fields.join(', ')} WHERE id = ?`;
+      await database.runAsync(query, values);
       return true;
     } catch (error) {
       console.error('Error updating user:', error);
-      return false;
+      if (error.message && error.message.includes('UNIQUE')) {
+        throw new Error('Email already in use by another user');
+      }
+      throw error;
     }
   },
 };

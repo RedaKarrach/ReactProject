@@ -90,52 +90,57 @@ const LoginScreen = ({ navigation }) => {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
+        <View style={styles.backgroundDecorLeft} />
+        <View style={styles.backgroundDecorRight} />
+
         <View style={styles.content}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>Sign in to continue shopping</Text>
-          </View>
+          <View style={styles.card}>
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={styles.title}>Welcome Back</Text>
+              <Text style={styles.subtitle}>Sign in to continue shopping</Text>
+            </View>
 
-          {/* Form */}
-          <View style={styles.form}>
-            <Input
-              label="Email"
-              value={email}
-              onChangeText={setEmail}
-              placeholder="Enter your email"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              error={errors.email}
-            />
+            {/* Form */}
+            <View style={styles.form}>
+              <Input
+                label="Email"
+                value={email}
+                onChangeText={setEmail}
+                placeholder="Enter your email"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                error={errors.email}
+              />
 
-            <Input
-              label="Password"
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Enter your password"
-              secureTextEntry
-              error={errors.password}
-            />
+              <Input
+                label="Password"
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Enter your password"
+                secureTextEntry
+                error={errors.password}
+              />
 
-            <Button
-              title="Sign In"
-              onPress={handleLogin}
-              loading={loading}
-              fullWidth
-              style={styles.loginButton}
-            />
-          </View>
+              <Button
+                title="Sign In"
+                onPress={handleLogin}
+                loading={loading}
+                fullWidth
+                style={styles.loginButton}
+              />
+            </View>
 
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
-            <Button
-              title="Sign Up"
-              onPress={navigateToRegister}
-              variant="outline"
-              size="small"
-            />
+            {/* Footer */}
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Don't have an account? </Text>
+              <Button
+                title="Sign Up"
+                onPress={navigateToRegister}
+                variant="outline"
+                size="small"
+              />
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -146,43 +151,86 @@ const LoginScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#0f172a',
   },
   scrollContent: {
     flexGrow: 1,
+    paddingVertical: 20,
+  },
+  backgroundDecorLeft: {
+    position: 'absolute',
+    top: -120,
+    left: -40,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: '#6d28d9',
+    opacity: 0.16,
+    transform: [{ rotate: '15deg' }],
+  },
+  backgroundDecorRight: {
+    position: 'absolute',
+    bottom: -100,
+    right: -60,
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: '#ff6b6b',
+    opacity: 0.10,
+    transform: [{ rotate: '-20deg' }],
   },
   content: {
     flex: 1,
     padding: 24,
     justifyContent: 'center',
   },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 24,
+    elevation: 6,
+  },
   header: {
-    marginBottom: 40,
+    marginBottom: 30,
     alignItems: 'center',
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 8,
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: 14,
+    color: '#64748b',
   },
   form: {
     marginBottom: 24,
   },
   loginButton: {
     marginTop: 8,
+    backgroundColor: '#5B21B6',
+    borderRadius: 14,
+    paddingVertical: 14,
+    shadowColor: '#5B21B6',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.16,
+    shadowRadius: 14,
+    elevation: 6,
   },
   footer: {
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   footerText: {
     fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 12,
+    color: '#d6ccff',
+    marginRight: 8,
   },
 });
 

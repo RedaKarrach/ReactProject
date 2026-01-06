@@ -37,7 +37,7 @@ const Header = ({
 
   return (
     <View style={styles.header}>
-      <StatusBar barStyle="light-content" backgroundColor="#2563eb" />
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.content}>
         <View style={styles.leftSection}>
           {showBack && (
@@ -61,13 +61,15 @@ const Header = ({
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#fff',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 44,
-    elevation: 4,
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.08,
     shadowRadius: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   content: {
     height: 56,
@@ -86,12 +88,12 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   backText: {
-    color: '#fff',
+    color: '#5B21B6',
     fontSize: 28,
     fontWeight: '300',
   },
   title: {
-    color: '#fff',
+    color: '#1f2937',
     fontSize: 20,
     fontWeight: 'bold',
     flex: 1,

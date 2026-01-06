@@ -185,17 +185,21 @@ export const AuthProvider = ({ children }) => {
         throw new Error('User not logged in');
       }
       
-      // Update in database
+      // Update in database (pass userId and updates separately)
       const updatedUser = await UserModel.updateProfile(user.id, updatedData);
+      
+      if (!updatedUser) {
+        throw new Error('Failed to update profile');
+      }
       
       // Update storage and state
       await authStorage.saveUserData(updatedUser);
       setUser(updatedUser);
       
-      return { success: true };
+      return { success: true, user: updatedUser };
     } catch (err) {
       console.error('Update profile error:', err);
-      return { success: false, error: 'Failed to update profile' };
+      return { success: false, error: err.message || 'Failed to update profile' };
     }
   };
 

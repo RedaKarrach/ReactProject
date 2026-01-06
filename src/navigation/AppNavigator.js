@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import AuthNavigator from './AuthNavigator';
 import TabNavigator from './TabNavigator';
 import ProductDetailsScreen from '../screens/ProductDetailsScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
 import Loader from '../components/Loader';
 
 const Stack = createStackNavigator();
@@ -40,6 +41,10 @@ const AppNavigator = () => {
           <Stack.Screen
             name="ProductDetails"
             component={ProductDetailsScreen}
+          />
+          <Stack.Screen
+            name="EditProfile"
+            component={EditProfileScreen}
           />
         </Stack.Navigator>
       ) : (

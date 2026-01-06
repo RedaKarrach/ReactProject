@@ -45,10 +45,14 @@ const ProductDetailsScreen = ({ route, navigation }) => {
         {
           text: 'Continue Shopping',
           style: 'cancel',
+          onPress: () => navigation.goBack(),
         },
         {
           text: 'View Cart',
-          onPress: () => navigation.navigate('Cart'),
+          onPress: () => {
+            // Navigate to Cart by going back to Main TabNavigator and specifying Cart screen
+            navigation.navigate('Main', { screen: 'Cart' });
+          },
         },
       ]
     );
@@ -166,7 +170,7 @@ const ProductDetailsScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f9fb',
   },
   content: {
     flex: 1,
@@ -174,10 +178,12 @@ const styles = StyleSheet.create({
   imageContainer: {
     width: width,
     height: width,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   image: {
     width: '100%',
@@ -185,16 +191,22 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     padding: 20,
+    backgroundColor: '#fff',
+    marginTop: 12,
+    marginHorizontal: 12,
+    borderRadius: 16,
+    marginBottom: 12,
   },
   category: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#9ca3af',
     textTransform: 'uppercase',
     fontWeight: '600',
     marginBottom: 8,
+    letterSpacing: 0.5,
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#1f2937',
     marginBottom: 12,
@@ -203,18 +215,39 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#2563eb',
+    color: '#5B21B6',
     marginBottom: 16,
   },
   ratingContainer: {
     marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ratingBadge: {
+    backgroundColor: '#f3f0ff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginBottom: 0,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: '#e9d5ff',
+  },
+  ratingScore: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#5B21B6',
   },
   ratingText: {
-    fontSize: 16,
-    color: '#374151',
+    fontSize: 14,
+    color: '#6b7280',
   },
   descriptionContainer: {
     marginBottom: 24,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   descriptionTitle: {
     fontSize: 18,
@@ -224,7 +257,7 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 16,
-    color: '#4b5563',
+    color: '#6b7280',
     lineHeight: 24,
   },
   quantityContainer: {
@@ -252,13 +285,29 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   cartStatus: {
-    backgroundColor: '#d1fae5',
+    backgroundColor: '#f0fdf4',
     padding: 12,
-    borderRadius: 8,
-    marginTop: 8,
+    borderRadius: 10,
+    marginTop: 12,
+    borderWidth: 2,
+    borderColor: '#bbf7d0',
+  },
+  checkIcon: {
+    backgroundColor: '#10b981',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  checkIconText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   cartStatusText: {
-    color: '#065f46',
+    color: '#047857',
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
@@ -266,8 +315,13 @@ const styles = StyleSheet.create({
   footer: {
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: '#f0f0f0',
     backgroundColor: '#fff',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
   },
 });
 

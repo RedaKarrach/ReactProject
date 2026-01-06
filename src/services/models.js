@@ -88,6 +88,14 @@ export const UserModel = {
    */
   updateProfile: async (userId, updates) => {
     try {
+      // Check if email is already taken by another user
+      if (updates.email) {
+        const existingUser = await database.user.getUserByEmail(updates.email);
+        if (existingUser && existingUser.id !== userId) {
+          throw new Error('Email already in use by another user');
+        }
+      }
+      
       const success = await database.user.updateUser(userId, updates);
       if (!success) {
         throw new Error('Failed to update profile');

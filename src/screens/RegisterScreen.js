@@ -22,10 +22,7 @@ import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
 
-/**
- * RegisterScreen Component
- * Handles user registration
- */
+
 const RegisterScreen = ({ navigation }) => {
   const { register } = useAuth();
   const [name, setName] = useState('');

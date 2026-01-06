@@ -169,8 +169,8 @@ const HomeScreen = ({ navigation }) => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={['#2563eb']}
-              tintColor="#2563eb"
+              colors={['#5B21B6']}
+              tintColor="#5B21B6"
             />
           }
         />
@@ -182,10 +182,11 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#0f172a',
   },
   listContent: {
     padding: 16,
+    paddingTop: 20,
   },
   columnWrapper: {
     justifyContent: 'space-between',
@@ -195,10 +196,15 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   cartIconContainer: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#5B21B6',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 6,
+    borderRadius: 8,
+    shadowColor: '#5B21B6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   cartIcon: {
     fontSize: 12,
@@ -210,13 +216,18 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     right: 0,
-    backgroundColor: '#dc2626',
+    backgroundColor: '#ff6b6b',
     borderRadius: 10,
     minWidth: 20,
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 4,
+    shadowColor: '#ff6b6b',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 4,
   },
   badgeText: {
     color: '#fff',
@@ -233,20 +244,22 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: '#1e293b',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#5B21B6',
   },
   emptyIconText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#6b7280',
+    color: '#cbd5e1',
     letterSpacing: 0.5,
   },
   emptyText: {
     fontSize: 18,
-    color: '#6b7280',
+    color: '#cbd5e1',
   },
   errorState: {
     flex: 1,
@@ -258,27 +271,34 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#fee2e2',
+    backgroundColor: '#1e293b',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#ff6b6b',
   },
   errorIconText: {
     fontSize: 36,
     fontWeight: '700',
-    color: '#dc2626',
+    color: '#ff6b6b',
   },
   errorText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#cbd5e1',
     textAlign: 'center',
     marginBottom: 24,
   },
   retryButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#5B21B6',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
+    shadowColor: '#5B21B6',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
   },
   retryText: {
     color: '#fff',

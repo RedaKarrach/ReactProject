@@ -82,6 +82,23 @@ const CartScreen = ({ navigation }) => {
    * Handle checkout
    */
   const handleCheckout = async () => {
+    // Check if cart is empty
+    if (cartItems.length === 0) {
+      Alert.alert('Empty Cart', 'Please add items to your cart before checkout');
+      return;
+    }
+
+    // Check if user is logged in
+    if (!user || !user.id) {
+      Alert.alert('Not Logged In', 'Please log in to proceed with checkout', [
+        {
+          text: 'OK',
+          onPress: () => navigation.navigate('Profile'),
+        },
+      ]);
+      return;
+    }
+
     Alert.alert(
       'Place Order',
       `Total: $${getCartTotal().toFixed(2)}\n\nConfirm your order?`,
@@ -90,25 +107,42 @@ const CartScreen = ({ navigation }) => {
         {
           text: 'Confirm',
           onPress: async () => {
-            const result = await createOrder(user.id, {
-              address: '123 Main St',
-              city: 'New York',
-              country: 'USA',
-            });
+            try {
+              const result = await createOrder(user.id, {
+                address: '123 Main St',
+                city: 'New York',
+                country: 'USA',
+              });
 
-            if (result.success) {
-              Alert.alert(
-                'Success',
-                'Your order has been placed!',
-                [
-                  {
-                    text: 'View Orders',
-                    onPress: () => navigation.navigate('Orders'),
-                  },
-                ]
-              );
-            } else {
-              Alert.alert('Error', result.error);
+              if (result.success) {
+                // Clear cart after successful order
+                await clearCart();
+                
+                Alert.alert(
+                  'Success',
+                  'Your order has been placed!',
+                  [
+                    {
+                      text: 'View Orders',
+                      onPress: () => {
+                        // Navigate directly to Orders tab (same level)
+                        navigation.navigate('Orders');
+                      },
+                    },
+                    {
+                      text: 'Continue Shopping',
+                      onPress: () => {
+                        navigation.navigate('Home');
+                      },
+                    },
+                  ]
+                );
+              } else {
+                Alert.alert('Error', result.error || 'Failed to place order. Please try again.');
+              }
+            } catch (error) {
+              console.error('Checkout error:', error);
+              Alert.alert('Error', 'An unexpected error occurred during checkout');
             }
           },
         },
@@ -211,6 +245,7 @@ const CartScreen = ({ navigation }) => {
           onPress={handleCheckout}
           fullWidth
           size="large"
+          style={styles.checkoutButton}
         />
 
         <TouchableOpacity onPress={handleClearCart} style={styles.clearButton}>
@@ -239,29 +274,35 @@ const CartScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#f8f9fb',
   },
   listContent: {
     flexGrow: 1,
+    paddingTop: 12,
+    paddingBottom: 20,
   },
   cartItem: {
     flexDirection: 'row',
     backgroundColor: '#fff',
-    marginHorizontal: 16,
+    marginHorizontal: 12,
     marginVertical: 8,
-    padding: 12,
-    borderRadius: 12,
+    padding: 14,
+    borderRadius: 14,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   itemImage: {
     width: 80,
     height: 80,
-    borderRadius: 8,
-    backgroundColor: '#f3f4f6',
+    borderRadius: 10,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#e8e8e8',
   },
   itemInfo: {
     flex: 1,
@@ -277,7 +318,7 @@ const styles = StyleSheet.create({
   itemPrice: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2563eb',
+    color: '#5B21B6',
     marginBottom: 8,
   },
   quantityContainer: {
@@ -287,15 +328,17 @@ const styles = StyleSheet.create({
   quantityButton: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    backgroundColor: '#f3f0ff',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e9d5ff',
   },
   quantityButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#374151',
+    color: '#5B21B6',
   },
   quantityText: {
     fontSize: 16,
@@ -307,9 +350,12 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     padding: 8,
+    justifyContent: 'center',
   },
-  removeIcon: {
-    fontSize: 24,
+  removeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#dc2626',
   },
   emptyContainer: {
     flex: 1,
@@ -317,20 +363,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 40,
   },
-  emptyIcon: {
-    fontSize: 80,
-    marginBottom: 16,
+  emptyIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#f3f0ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: '#e9d5ff',
+  },
+  emptyIconText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#5B21B6',
+    letterSpacing: 0.5,
   },
   emptyTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#1f2937',
     marginBottom: 8,
+    textAlign: 'center',
   },
   emptySubtitle: {
     fontSize: 16,
     color: '#6b7280',
     marginBottom: 32,
+    textAlign: 'center',
   },
   shopButton: {
     marginTop: 16,
@@ -341,6 +402,13 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
     marginTop: 'auto',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
   totalContainer: {
     marginBottom: 20,
@@ -360,8 +428,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   grandTotalRow: {
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopWidth: 2,
+    borderTopColor: '#f3f0ff',
     paddingTop: 12,
     marginTop: 8,
   },
@@ -373,7 +441,7 @@ const styles = StyleSheet.create({
   grandTotalValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#2563eb',
+    color: '#5B21B6',
   },
   clearButton: {
     marginTop: 12,
@@ -384,6 +452,15 @@ const styles = StyleSheet.create({
     color: '#dc2626',
     fontSize: 14,
     fontWeight: '600',
+  },
+  checkoutButton: {
+    backgroundColor: '#5B21B6',
+    borderRadius: 10,
+    shadowColor: '#5B21B6',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 6,
   },
 });
 
