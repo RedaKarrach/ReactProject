@@ -142,8 +142,9 @@ ecommerce-app/
 - **React Hooks** - Local state and side effects
 
 ### Data & Storage
+- **SQLite (expo-sqlite)** - Local database for data persistence
 - **Axios** - HTTP client for API requests
-- **AsyncStorage** - Local data persistence
+- **AsyncStorage** - Fallback storage solution
 - **Fake Store API** - Product data source
 
 ### UI/UX
@@ -209,6 +210,44 @@ Use any email and password (minimum 6 characters) to test the app:
 - `npm run ios` - Run on iOS
 - `npm run web` - Run on web browser
 
+## 🗄️ Database
+
+This app uses **SQLite** (via expo-sqlite) for robust local data persistence. See [DATABASE.md](DATABASE.md) for complete documentation.
+
+### Database Features
+- ✅ User authentication with hashed passwords
+- ✅ Product caching for offline access
+- ✅ Persistent shopping cart per user
+- ✅ Complete order history
+- ✅ Favorites management
+- ✅ Optimized with indexes for performance
+
+### Quick Database Overview
+
+**Tables:**
+- `users` - User accounts and profiles
+- `products` - Cached product data
+- `cart` - Shopping cart items
+- `orders` - Order history
+- `order_items` - Order line items
+- `favorites` - User favorites
+
+**Testing Database:**
+```javascript
+import dbTests from './src/services/databaseTests';
+
+// Run all tests
+await dbTests.runAllTests();
+
+// Seed with sample data
+await dbTests.seedDatabase();
+
+// Reset database
+await dbTests.resetAndTest();
+```
+
+For full details, see [DATABASE.md](DATABASE.md)
+
 ## Key Features Breakdown
 
 ### Authentication Flow
@@ -226,37 +265,52 @@ Use any email and password (minimum 6 characters) to test the app:
 6. View order history
 
 ### State Management
-- **AuthContext**: User authentication state
-- **CartContext**: Shopping cart operations
-- **AsyncStorage**: Data persistence
+- **AuthContext**: User authentication state with SQLite integration
+- **CartContext**: Shopping cart operations with database persistence
+- **Database Service**: Centralized SQLite operations
+- **Models Layer**: High-level API for database interactions
 
 ## Security Considerations
 
 ### Current Implementation
-- Password masking in input fields
-- Token-based authentication (mock)
-- Secure storage using AsyncStorage
+- ✅ Password hashing before database storage
+- ✅ Password masking in input fields
+- ✅ Token-based authentication
+- ✅ Secure local database storage
+- ✅ User data isolation with foreign keys
 
 ### Production Recommendations
-- Implement real JWT authentication
+- Implement production-grade password hashing (bcrypt/expo-crypto)
 - Use secure storage libraries (react-native-keychain)
 - Add refresh token mechanism
 - Implement HTTPS-only API calls
-- Add input sanitization
+- Add input sanitization and validation
 - Implement rate limiting
+- Enable database encryption
+- Add two-factor authentication (2FA)
 
 ## API Integration
 
 ### Current Setup
-- Using **Fake Store API** (https://fakestoreapi.com)
-- Mock authentication implementation
-- Local order storage
+- Using **Fake Store API** (https://fakestoreapi.com) for product data
+- SQLite database for all user data (auth, cart, orders)
+- Hybrid approach: API for products, local DB for user operations
+- Product caching for offline access
 
 ### Products API
 ```javascript
-GET /products           // Get all products
+GET /products           // Get all products (cached to DB)
 GET /products/{id}      // Get single product
 GET /products/categories // Get all categories
+```
+
+### Database Operations
+```javascript
+// All local operations via SQLite:
+- User registration & login
+- Cart management
+- Order creation & history
+- Favorites management
 ```
 
 ### Extending the API
@@ -264,8 +318,9 @@ To integrate a real backend:
 
 1. Update `src/services/api.js` with your API base URL
 2. Implement real authentication endpoints
-3. Add proper error handling
-4. Update storage to use backend sync
+3. Add database sync mechanism
+4. Update models to sync with backend
+5. Add proper error handling and retry logic
 
 ## UI/UX Features
 

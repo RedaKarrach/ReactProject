@@ -9,6 +9,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View, StyleSheet, Platform } from 'react-native';
 import HomeScreen from '../screens/HomeScreen';
+import CategoriesScreen from '../screens/CategoriesScreen';
 import CartScreen from '../screens/CartScreen';
 import OrdersScreen from '../screens/OrdersScreen';
 import ProfileScreen from '../screens/ProfileScreen';
@@ -76,6 +77,19 @@ const TabNavigator = () => {
           ),
           tabBarLabel: ({ focused }) => (
             <TabBarLabel label="Home" focused={focused} />
+          ),
+        }}
+      />
+
+      <Tab.Screen
+        name="Categories"
+        component={CategoriesScreen}
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabBarIcon label="Categories" focused={focused} />
+          ),
+          tabBarLabel: ({ focused }) => (
+            <TabBarLabel label="Categories" focused={focused} />
           ),
         }}
       />

@@ -11,6 +11,8 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { cartStorage, ordersStorage } from '../services/storage';
 import { orderAPI } from '../services/api';
+import { CartModel, OrderModel } from '../services/models';
+import { useAuth } from './AuthContext';
 
 /**
  * Shopping Cart Context
@@ -27,27 +29,42 @@ const CartContext = createContext({});
  * Manages shopping cart state and operations
  */
 export const CartProvider = ({ children }) => {
+  const { user } = useAuth();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   /**
-   * Load cart from storage on initialization
+   * Load cart from database when user changes
    */
   useEffect(() => {
-    loadCart();
-  }, []);
-
-  /**
-   * Save cart to storage whenever it changes
-   */
-  useEffect(() => {
-    if (!loading) {
-      saveCart();
+    if (user && user.id) {
+      loadCartFromDatabase();
+    } else {
+      // No user, use local storage fallback
+      loadCart();
     }
-  }, [cartItems]);
+  }, [user]);
 
   /**
-   * Load cart from AsyncStorage
+   * Load cart from database
+   */
+  const loadCartFromDatabase = async () => {
+    try {
+      if (user && user.id) {
+        const items = await CartModel.getItems(user.id);
+        setCartItems(items);
+      }
+    } catch (error) {
+      console.error('Error loading cart from database:', error);
+      // Fallback to storage
+      await loadCart();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Load cart from AsyncStorage (fallback)
    */
   const loadCart = async () => {
     try {
@@ -61,7 +78,43 @@ export const CartProvider = ({ children }) => {
   };
 
   /**
-   * Save cart to AsyncStorage
+   * Add item to cart
+   */
+  const addToCart = async (product, quantity = 1) => {
+    try {
+      if (user && user.id) {
+        // Add to database
+        await CartModel.addItem(user.id, product);
+        // Reload cart from database
+        await loadCartFromDatabase();
+      } else {
+        // No user, update state only
+        setCartItems((prevItems) => {
+          const existingItemIndex = prevItems.findIndex(
+            (item) => item.id === product.id
+          );
+
+          if (existingItemIndex > -1) {
+            const updatedItems = [...prevItems];
+            updatedItems[existingItemIndex] = {
+              ...updatedItems[existingItemIndex],
+              quantity: updatedItems[existingItemIndex].quantity + quantity,
+            };
+            return updatedItems;
+          } else {
+            return [...prevItems, { ...product, quantity }];
+          }
+        });
+        // Save to storage
+        await saveCart();
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+    }
+  };
+
+  /**
+   * Save cart to AsyncStorage (fallback)
    */
   const saveCart = async () => {
     try {
@@ -72,94 +125,90 @@ export const CartProvider = ({ children }) => {
   };
 
   /**
-   * Add item to cart
-   */
-  const addToCart = (product, quantity = 1) => {
-    setCartItems((prevItems) => {
-      // Check if item already exists in cart
-      const existingItemIndex = prevItems.findIndex(
-        (item) => item.id === product.id
-      );
-
-      if (existingItemIndex > -1) {
-        // Item exists, update quantity
-        const updatedItems = [...prevItems];
-        updatedItems[existingItemIndex] = {
-          ...updatedItems[existingItemIndex],
-          quantity: updatedItems[existingItemIndex].quantity + quantity,
-        };
-        return updatedItems;
-      } else {
-        // Item doesn't exist, add new item
-        return [...prevItems, { ...product, quantity }];
-      }
-    });
-  };
-
-  /**
    * Remove item from cart
    */
-  const removeFromCart = (productId) => {
-    setCartItems((prevItems) =>
-      prevItems.filter((item) => item.id !== productId)
-    );
+  const removeFromCart = async (productId) => {
+    try {
+      if (user && user.id) {
+        // Find cart item
+        const item = cartItems.find(i => i.id === productId);
+        if (item && item.cartId) {
+          await CartModel.removeItem(item.cartId);
+          await loadCartFromDatabase();
+        }
+      } else {
+        setCartItems((prevItems) =>
+          prevItems.filter((item) => item.id !== productId)
+        );
+        await saveCart();
+      }
+    } catch (error) {
+      console.error('Error removing from cart:', error);
+    }
   };
 
   /**
    * Update item quantity
    */
-  const updateQuantity = (productId, quantity) => {
-    if (quantity <= 0) {
-      removeFromCart(productId);
-      return;
-    }
+  const updateQuantity = async (productId, quantity) => {
+    try {
+      if (quantity <= 0) {
+        await removeFromCart(productId);
+        return;
+      }
 
-    setCartItems((prevItems) =>
-      prevItems.map((item) =>
-        item.id === productId ? { ...item, quantity } : item
-      )
-    );
+      if (user && user.id) {
+        const item = cartItems.find(i => i.id === productId);
+        if (item && item.cartId) {
+          await CartModel.updateQuantity(item.cartId, quantity);
+          await loadCartFromDatabase();
+        }
+      } else {
+        setCartItems((prevItems) =>
+          prevItems.map((item) =>
+            item.id === productId ? { ...item, quantity } : item
+          )
+        );
+        await saveCart();
+      }
+    } catch (error) {
+      console.error('Error updating quantity:', error);
+    }
   };
 
   /**
    * Increment item quantity
    */
-  const incrementQuantity = (productId) => {
-    setCartItems((prevItems) =>
-      prevItems.map((item) =>
-        item.id === productId
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      )
-    );
+  const incrementQuantity = async (productId) => {
+    const item = cartItems.find(i => i.id === productId);
+    if (item) {
+      await updateQuantity(productId, item.quantity + 1);
+    }
   };
 
   /**
    * Decrement item quantity
    */
-  const decrementQuantity = (productId) => {
-    setCartItems((prevItems) => {
-      return prevItems
-        .map((item) => {
-          if (item.id === productId) {
-            const newQuantity = item.quantity - 1;
-            if (newQuantity <= 0) {
-              return null; // Mark for removal
-            }
-            return { ...item, quantity: newQuantity };
-          }
-          return item;
-        })
-        .filter((item) => item !== null); // Remove null items
-    });
+  const decrementQuantity = async (productId) => {
+    const item = cartItems.find(i => i.id === productId);
+    if (item) {
+      await updateQuantity(productId, item.quantity - 1);
+    }
   };
 
   /**
    * Clear entire cart
    */
   const clearCart = async () => {
-    setCartItems([]);
-    await cartStorage.clearCart();
+    try {
+      if (user && user.id) {
+        await CartModel.clear(user.id);
+      }
+      setCartItems([]);
+      await cartStorage.clearCart();
+    } catch (error) {
+      console.error('Error clearing cart:', error);
+    }
   };
 
   /**
@@ -203,22 +252,15 @@ export const CartProvider = ({ children }) => {
         throw new Error('Cart is empty');
       }
 
-      const orderData = {
-        userId,
-        items: cartItems,
-        total: getCartTotal(),
-        shippingAddress,
-        itemCount: getCartItemCount(),
-      };
+      if (!userId || !user || !user.id) {
+        throw new Error('User not logged in');
+      }
 
-      // Call API to create order
-      const order = await orderAPI.createOrder(orderData);
+      // Create order in database
+      const order = await OrderModel.create(user.id, cartItems, shippingAddress);
 
-      // Save order locally
+      // Save order locally as backup
       await ordersStorage.addOrder(order);
-
-      // Clear cart after successful order
-      await clearCart();
 
       return { success: true, order };
     } catch (error) {

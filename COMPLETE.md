@@ -1,8 +1,8 @@
-# 🎉 E-Commerce App - Build Complete!
+9# 🎉 E-Commerce App - Build Complete!
 
 ## � Development Team
 
-**Built with ❤️ by:**
+**Built with  by:**
 - **Reda Karrach** - Lead Developer & Project Architect
 - **Achraf Oubakouz** - Frontend Specialist & UI/UX Designer  
 - **Sara Bellaly** - Backend Integration & QA Engineer

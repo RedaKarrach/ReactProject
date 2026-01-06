@@ -9,6 +9,7 @@
  */
 
 import axios from 'axios';
+import { ProductModel } from './models';
 
 /**
  * API Service Layer
@@ -18,13 +19,13 @@ import axios from 'axios';
  * @author Sara Bellaly - Integration & Error Handling
  */
 
-// Base API configuration
+// Base API configuration - FakeStore API (vraie API publique)
 const API_BASE_URL = 'https://fakestoreapi.com';
 
 // Create axios instance with default config
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -64,15 +65,43 @@ apiClient.interceptors.response.use(
 );
 
 /**
- * Product API Services
+ * Product API Services avec cache SQLite
  */
 export const productAPI = {
-  // Get all products
-  getAllProducts: async () => {
+  // Get all products avec cache
+  getAllProducts: async (useCache = true) => {
     try {
+      // Essayer le cache d'abord si activé
+      if (useCache) {
+        const cachedProducts = await ProductModel.getAll();
+        if (cachedProducts && cachedProducts.length > 0) {
+          console.log('📦 Produits chargés depuis le cache SQLite');
+          return cachedProducts;
+        }
+      }
+
+      // Sinon, récupérer depuis l'API
+      console.log('🌐 Récupération des produits depuis l\'API...');
       const response = await apiClient.get('/products');
-      return response.data;
+      const products = response.data;
+
+      // Sauvegarder dans le cache SQLite
+      if (products && products.length > 0) {
+        await ProductModel.syncProducts(products);
+        console.log(`✅ ${products.length} produits mis en cache`);
+      }
+
+      return products;
     } catch (error) {
+      console.error('Erreur API produits:', error.message);
+      
+      // En cas d'erreur réseau, utiliser le cache
+      const cachedProducts = await ProductModel.getAll();
+      if (cachedProducts && cachedProducts.length > 0) {
+        console.log('⚠️ Utilisation du cache (mode offline)');
+        return cachedProducts;
+      }
+      
       throw error;
     }
   },
@@ -80,19 +109,34 @@ export const productAPI = {
   // Get single product by ID
   getProductById: async (id) => {
     try {
+      // Essayer le cache d'abord
+      const cachedProduct = await ProductModel.getById(id);
+      if (cachedProduct) {
+        console.log(`📦 Produit ${id} chargé depuis le cache`);
+        return cachedProduct;
+      }
+
+      // Sinon API
       const response = await apiClient.get(`/products/${id}`);
       return response.data;
     } catch (error) {
+      // Fallback cache
+      const cachedProduct = await ProductModel.getById(id);
+      if (cachedProduct) {
+        return cachedProduct;
+      }
       throw error;
     }
   },
 
-  // Get products by category
+  // Get products by category avec cache
   getProductsByCategory: async (category) => {
     try {
+      console.log(`🌐 Récupération catégorie: ${category}`);
       const response = await apiClient.get(`/products/category/${category}`);
       return response.data;
     } catch (error) {
+      console.error(`Erreur catégorie ${category}:`, error.message);
       throw error;
     }
   },
@@ -103,6 +147,25 @@ export const productAPI = {
       const response = await apiClient.get('/products/categories');
       return response.data;
     } catch (error) {
+      // Retourner des catégories par défaut en cas d'erreur
+      console.warn('Utilisation des catégories par défaut');
+      return ['electronics', 'jewelery', 'men\'s clothing', 'women\'s clothing'];
+    }
+  },
+
+  // Forcer le rafraîchissement du cache
+  refreshCache: async () => {
+    try {
+      console.log('🔄 Rafraîchissement du cache...');
+      const response = await apiClient.get('/products');
+      const products = response.data;
+      
+      await ProductModel.syncProducts(products);
+      console.log(`✅ Cache rafraîchi: ${products.length} produits`);
+      
+      return products;
+    } catch (error) {
+      console.error('Erreur rafraîchissement:', error.message);
       throw error;
     }
   },

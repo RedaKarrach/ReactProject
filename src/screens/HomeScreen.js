@@ -42,16 +42,17 @@ const HomeScreen = ({ navigation }) => {
   }, []);
 
   /**
-   * Fetch products from API
+   * Fetch products from API avec cache SQLite
    */
   const fetchProducts = async () => {
     try {
       setError(null);
-      const data = await productAPI.getAllProducts();
+      // Utilise le cache par défaut, récupère de l'API si nécessaire
+      const data = await productAPI.getAllProducts(true);
       setProducts(data);
     } catch (err) {
-      setError('Failed to load products');
-      console.error('Error fetching products:', err);
+      setError('Impossible de charger les produits');
+      console.error('Erreur chargement produits:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -59,11 +60,22 @@ const HomeScreen = ({ navigation }) => {
   };
 
   /**
-   * Handle pull to refresh
+   * Handle pull to refresh - force refresh depuis l'API
    */
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    fetchProducts();
+    try {
+      // Force le rafraîchissement depuis l'API
+      const data = await productAPI.refreshCache();
+      setProducts(data);
+      setError(null);
+    } catch (err) {
+      console.error('Erreur rafraîchissement:', err);
+      // En cas d'erreur, recharger depuis le cache
+      await fetchProducts();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   /**

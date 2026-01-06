@@ -11,6 +11,8 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { authAPI } from '../services/api';
 import { authStorage } from '../services/storage';
+import { UserModel } from '../services/models';
+import database from '../services/database';
 
 /**
  * Authentication Context
@@ -36,8 +38,24 @@ export const AuthProvider = ({ children }) => {
    * Check for stored auth data on app initialization
    */
   useEffect(() => {
-    checkStoredAuth();
+    initializeAuth();
   }, []);
+
+  /**
+   * Initialize database and check auth
+   */
+  const initializeAuth = async () => {
+    try {
+      // Initialize database
+      await database.init();
+      
+      // Check stored auth
+      await checkStoredAuth();
+    } catch (err) {
+      console.error('Error initializing auth:', err);
+      setLoading(false);
+    }
+  };
 
   /**
    * Check if user is already logged in
@@ -66,18 +84,25 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      // Call login API
-      const response = await authAPI.login(email, password);
+      // Try to login with SQLite database
+      const dbUser = await UserModel.login(email, password);
+      
+      if (dbUser) {
+        // Generate a simple token
+        const token = `token_${dbUser.id}_${Date.now()}`;
+        
+        // Save token and user data
+        await authStorage.saveToken(token);
+        await authStorage.saveUserData(dbUser);
 
-      // Save token and user data
-      await authStorage.saveToken(response.token);
-      await authStorage.saveUserData(response.user);
+        // Update state
+        setToken(token);
+        setUser(dbUser);
 
-      // Update state
-      setToken(response.token);
-      setUser(response.user);
-
-      return { success: true };
+        return { success: true };
+      } else {
+        throw new Error('Invalid credentials');
+      }
     } catch (err) {
       const errorMessage = err.message || 'Login failed. Please try again.';
       setError(errorMessage);
@@ -95,18 +120,25 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      // Call register API
-      const response = await authAPI.register(name, email, password);
+      // Register with SQLite database
+      const dbUser = await UserModel.register(email, password, name);
+      
+      if (dbUser) {
+        // Generate a simple token
+        const token = `token_${dbUser.id}_${Date.now()}`;
+        
+        // Save token and user data
+        await authStorage.saveToken(token);
+        await authStorage.saveUserData(dbUser);
 
-      // Save token and user data
-      await authStorage.saveToken(response.token);
-      await authStorage.saveUserData(response.user);
+        // Update state
+        setToken(token);
+        setUser(dbUser);
 
-      // Update state
-      setToken(response.token);
-      setUser(response.user);
-
-      return { success: true };
+        return { success: true };
+      } else {
+        throw new Error('Registration failed');
+      }
     } catch (err) {
       const errorMessage = err.message || 'Registration failed. Please try again.';
       setError(errorMessage);
@@ -123,9 +155,6 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
 
-      // Call logout API
-      await authAPI.logout();
-
       // Clear stored data
       await authStorage.clearAuthData();
 
@@ -137,7 +166,7 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (err) {
       console.error('Logout error:', err);
-      // Even if API fails, clear local data
+      // Even if fails, clear local data
       await authStorage.clearAuthData();
       setToken(null);
       setUser(null);
@@ -152,9 +181,17 @@ export const AuthProvider = ({ children }) => {
    */
   const updateProfile = async (updatedData) => {
     try {
-      const updatedUser = { ...user, ...updatedData };
+      if (!user || !user.id) {
+        throw new Error('User not logged in');
+      }
+      
+      // Update in database
+      const updatedUser = await UserModel.updateProfile(user.id, updatedData);
+      
+      // Update storage and state
       await authStorage.saveUserData(updatedUser);
       setUser(updatedUser);
+      
       return { success: true };
     } catch (err) {
       console.error('Update profile error:', err);
