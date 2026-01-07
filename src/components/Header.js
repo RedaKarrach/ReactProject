@@ -37,7 +37,7 @@ const Header = ({
 
   return (
     <View style={styles.header}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <StatusBar barStyle="light-content" backgroundColor="#020617" />
       <View style={styles.content}>
         <View style={styles.leftSection}>
           {showBack && (
@@ -61,22 +61,22 @@ const Header = ({
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: '#020617',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 44,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#111827',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 8,
   },
   content: {
     height: 56,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
   leftSection: {
     flexDirection: 'row',
@@ -85,17 +85,19 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginRight: 12,
-    padding: 4,
+    padding: 6,
+    borderRadius: 999,
+    backgroundColor: '#0b1120',
   },
   backText: {
-    color: '#5B21B6',
-    fontSize: 28,
-    fontWeight: '300',
+    color: '#e5e7eb',
+    fontSize: 22,
+    fontWeight: '400',
   },
   title: {
-    color: '#1f2937',
+    color: '#f9fafb',
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '700',
     flex: 1,
   },
   rightSection: {

@@ -14,46 +14,50 @@ import CartScreen from '../screens/CartScreen';
 import OrdersScreen from '../screens/OrdersScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import { useCart } from '../context/CartContext';
+import { Ionicons } from '@expo/vector-icons';
+
 
 const Tab = createBottomTabNavigator();
 
-/**
- * TabNavigator
- * Bottom tab navigation for main app screens
- */
 const TabNavigator = () => {
   const { getCartItemCount } = useCart();
 
-  /**
-   * Custom tab bar icon
-   */
-  const TabBarIcon = ({ label, focused }) => (
-    <View style={[styles.tabIconContainer, focused && styles.tabIconFocusedContainer]}>
-      <Text style={[styles.tabIconText, focused && styles.tabIconTextFocused]}>
-        {label.charAt(0)}
-      </Text>
+  const TabBarIcon = ({ icon, focused }) => (
+    <View
+      style={[
+        styles.tabIconContainer,
+        focused && styles.tabIconFocusedContainer,
+      ]}
+    >
+    <Ionicons
+      name={icon}
+      size={20}
+      color={focused ? '#ffffff' : '#c7d2fe'}
+    />
     </View>
   );
 
-  /**
-   * Custom tab bar label
-   */
+
   const TabBarLabel = ({ label, focused }) => (
-    <Text style={[styles.tabLabel, focused && styles.tabLabelFocused]}>
+    <Text
+      style={[
+        styles.tabLabel,
+        focused && styles.tabLabelFocused,
+      ]}
+    >
       {label}
     </Text>
   );
 
-  /**
-   * Cart badge
-   */
   const CartBadge = () => {
     const count = getCartItemCount();
     if (count === 0) return null;
 
     return (
       <View style={styles.badge}>
-        <Text style={styles.badgeText}>{count > 99 ? '99+' : count}</Text>
+        <Text style={styles.badgeText}>
+          {count > 99 ? '99+' : count}
+        </Text>
       </View>
     );
   };
@@ -62,10 +66,10 @@ const TabNavigator = () => {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: '#2563eb',
-        tabBarInactiveTintColor: '#9ca3af',
         tabBarShowLabel: true,
+        tabBarStyle: styles.tabBar,
+        tabBarActiveTintColor: '#6366f1',
+        tabBarInactiveTintColor: '#9ca3af',
       }}
     >
       <Tab.Screen
@@ -73,7 +77,7 @@ const TabNavigator = () => {
         component={HomeScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabBarIcon label="Home" focused={focused} />
+            <TabBarIcon icon="home-outline" focused={focused} />
           ),
           tabBarLabel: ({ focused }) => (
             <TabBarLabel label="Home" focused={focused} />
@@ -86,21 +90,21 @@ const TabNavigator = () => {
         component={CategoriesScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabBarIcon label="Categories" focused={focused} />
+            <TabBarIcon icon="grid-outline" focused={focused} />
           ),
           tabBarLabel: ({ focused }) => (
             <TabBarLabel label="Categories" focused={focused} />
           ),
         }}
       />
-      
+
       <Tab.Screen
         name="Cart"
         component={CartScreen}
         options={{
           tabBarIcon: ({ focused }) => (
             <View>
-              <TabBarIcon label="Cart" focused={focused} />
+              <TabBarIcon icon="cart-outline" focused={focused} />
               <CartBadge />
             </View>
           ),
@@ -109,26 +113,26 @@ const TabNavigator = () => {
           ),
         }}
       />
-      
+
       <Tab.Screen
         name="Orders"
         component={OrdersScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabBarIcon label="Orders" focused={focused} />
+            <TabBarIcon icon="receipt-outline" focused={focused} />
           ),
           tabBarLabel: ({ focused }) => (
             <TabBarLabel label="Orders" focused={focused} />
           ),
         }}
       />
-      
+
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabBarIcon label="Profile" focused={focused} />
+            <TabBarIcon icon="person-outline" focused={focused} />
           ),
           tabBarLabel: ({ focused }) => (
             <TabBarLabel label="Profile" focused={focused} />
@@ -141,61 +145,60 @@ const TabNavigator = () => {
 
 const styles = StyleSheet.create({
   tabBar: {
-    height: Platform.OS === 'ios' ? 85 : 65,
-    paddingTop: 8,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 8,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    elevation: 8,
+    height: Platform.OS === 'ios' ? 90 : 68,
+    paddingTop: 13,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 10,
+    backgroundColor: '#0f172a',
+    borderTopWidth: 0,
+    elevation: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
   },
+
   tabIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#f3f4f6',
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: '#1e293b',
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   tabIconFocusedContainer: {
-    backgroundColor: '#dbeafe',
+    backgroundColor: '#312e81',
   },
-  tabIconText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#6b7280',
-  },
-  tabIconTextFocused: {
-    color: '#2563eb',
-  },
+
   tabLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
+    color: '#94a3b8',
     marginTop: 4,
   },
+
   tabLabelFocused: {
     fontWeight: '600',
+    color: '#e0e7ff',
   },
+
   badge: {
     position: 'absolute',
-    top: -4,
-    right: -8,
-    backgroundColor: '#dc2626',
-    borderRadius: 10,
+    top: -6,
+    right: -10,
+    backgroundColor: '#ef4444',
+    borderRadius: 999,
     minWidth: 20,
     height: 20,
+    paddingHorizontal: 5,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 4,
   },
+
   badgeText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
 });
 
