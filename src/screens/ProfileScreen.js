@@ -80,6 +80,13 @@ const ProfileScreen = ({ navigation }) => {
       onPress: () => navigation.navigate('PaymentMethods'),
     },
     {
+      id: 5,
+      icon: 'card-outline',
+      title: 'Quick Payment',
+      subtitle: 'Add payment for checkout',
+      onPress: () => navigation.navigate('Payment'),
+    },
+    {
       id: 6,
       icon: 'settings-outline',
       title: 'Settings',

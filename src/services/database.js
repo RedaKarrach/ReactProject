@@ -120,12 +120,51 @@ const initDatabase = async () => {
       );
     `);
 
+    // Payment methods table
+    await database.execAsync(`
+      CREATE TABLE IF NOT EXISTS payment_methods (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        card_holder_name TEXT NOT NULL,
+        card_number TEXT NOT NULL,
+        card_type TEXT,
+        expiry_month TEXT NOT NULL,
+        expiry_year TEXT NOT NULL,
+        cvv TEXT NOT NULL,
+        is_default INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+    `);
+
+    // Payments/transactions table
+    await database.execAsync(`
+      CREATE TABLE IF NOT EXISTS payments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        payment_method_id INTEGER,
+        amount REAL NOT NULL,
+        status TEXT DEFAULT 'pending',
+        transaction_id TEXT,
+        payment_type TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (payment_method_id) REFERENCES payment_methods(id) ON DELETE SET NULL
+      );
+    `);
+
     // Create indexes for better performance
     await database.execAsync(`
       CREATE INDEX IF NOT EXISTS idx_cart_user ON cart(user_id);
       CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id);
       CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id);
       CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
+      CREATE INDEX IF NOT EXISTS idx_payment_methods_user ON payment_methods(user_id);
+      CREATE INDEX IF NOT EXISTS idx_payments_order ON payments(order_id);
+      CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
     `);
 
     console.log('Database initialized successfully');
@@ -614,6 +653,242 @@ const favoritesOperations = {
 };
 
 /**
+ * Payment methods operations
+ */
+const paymentMethodOperations = {
+  // Add payment method
+  addPaymentMethod: async (userId, paymentData) => {
+    try {
+      const database = await openDatabase();
+      
+      // If this is set as default, unset all other defaults first
+      if (paymentData.isDefault) {
+        await database.runAsync(
+          'UPDATE payment_methods SET is_default = 0 WHERE user_id = ?',
+          [userId]
+        );
+      }
+      
+      const result = await database.runAsync(
+        `INSERT INTO payment_methods 
+         (user_id, card_holder_name, card_number, card_type, expiry_month, expiry_year, cvv, is_default) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          userId,
+          paymentData.cardHolderName,
+          paymentData.cardNumber,
+          paymentData.cardType || 'visa',
+          paymentData.expiryMonth,
+          paymentData.expiryYear,
+          paymentData.cvv,
+          paymentData.isDefault ? 1 : 0
+        ]
+      );
+      
+      return result.lastInsertRowId;
+    } catch (error) {
+      console.error('Error adding payment method:', error);
+      throw error;
+    }
+  },
+
+  // Get user's payment methods
+  getPaymentMethods: async (userId) => {
+    try {
+      const database = await openDatabase();
+      const results = await database.getAllAsync(
+        `SELECT id, card_holder_name, card_number, card_type, expiry_month, expiry_year, 
+                is_default, created_at 
+         FROM payment_methods 
+         WHERE user_id = ? 
+         ORDER BY is_default DESC, created_at DESC`,
+        [userId]
+      );
+      
+      return results.map(pm => ({
+        id: pm.id,
+        cardHolderName: pm.card_holder_name,
+        cardNumber: pm.card_number,
+        cardType: pm.card_type,
+        expiryMonth: pm.expiry_month,
+        expiryYear: pm.expiry_year,
+        isDefault: pm.is_default === 1,
+        createdAt: pm.created_at
+      }));
+    } catch (error) {
+      console.error('Error getting payment methods:', error);
+      return [];
+    }
+  },
+
+  // Get payment method by ID
+  getPaymentMethodById: async (id) => {
+    try {
+      const database = await openDatabase();
+      const pm = await database.getFirstAsync(
+        `SELECT id, user_id, card_holder_name, card_number, card_type, expiry_month, expiry_year, 
+                is_default, created_at 
+         FROM payment_methods 
+         WHERE id = ?`,
+        [id]
+      );
+      
+      if (!pm) return null;
+      
+      return {
+        id: pm.id,
+        userId: pm.user_id,
+        cardHolderName: pm.card_holder_name,
+        cardNumber: pm.card_number,
+        cardType: pm.card_type,
+        expiryMonth: pm.expiry_month,
+        expiryYear: pm.expiry_year,
+        isDefault: pm.is_default === 1,
+        createdAt: pm.created_at
+      };
+    } catch (error) {
+      console.error('Error getting payment method:', error);
+      return null;
+    }
+  },
+
+  // Set default payment method
+  setDefaultPaymentMethod: async (userId, paymentMethodId) => {
+    try {
+      const database = await openDatabase();
+      
+      // First unset all defaults
+      await database.runAsync(
+        'UPDATE payment_methods SET is_default = 0 WHERE user_id = ?',
+        [userId]
+      );
+      
+      // Then set the new default
+      await database.runAsync(
+        'UPDATE payment_methods SET is_default = 1 WHERE id = ? AND user_id = ?',
+        [paymentMethodId, userId]
+      );
+      
+      return true;
+    } catch (error) {
+      console.error('Error setting default payment method:', error);
+      return false;
+    }
+  },
+
+  // Delete payment method
+  deletePaymentMethod: async (id, userId) => {
+    try {
+      const database = await openDatabase();
+      await database.runAsync(
+        'DELETE FROM payment_methods WHERE id = ? AND user_id = ?',
+        [id, userId]
+      );
+      return true;
+    } catch (error) {
+      console.error('Error deleting payment method:', error);
+      return false;
+    }
+  },
+};
+
+/**
+ * Payment/transaction operations
+ */
+const paymentOperations = {
+  // Create payment record
+  createPayment: async (orderId, userId, paymentMethodId, amount, paymentType = 'card') => {
+    try {
+      const database = await openDatabase();
+      
+      // Generate transaction ID
+      const transactionId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+      
+      const result = await database.runAsync(
+        `INSERT INTO payments 
+         (order_id, user_id, payment_method_id, amount, status, transaction_id, payment_type) 
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [orderId, userId, paymentMethodId, amount, 'completed', transactionId, paymentType]
+      );
+      
+      return {
+        id: result.lastInsertRowId,
+        transactionId,
+        status: 'completed'
+      };
+    } catch (error) {
+      console.error('Error creating payment:', error);
+      throw error;
+    }
+  },
+
+  // Get payment by order ID
+  getPaymentByOrderId: async (orderId) => {
+    try {
+      const database = await openDatabase();
+      const payment = await database.getFirstAsync(
+        `SELECT p.*, pm.card_type, pm.card_number 
+         FROM payments p
+         LEFT JOIN payment_methods pm ON p.payment_method_id = pm.id
+         WHERE p.order_id = ?`,
+        [orderId]
+      );
+      
+      if (!payment) return null;
+      
+      return {
+        id: payment.id,
+        orderId: payment.order_id,
+        userId: payment.user_id,
+        paymentMethodId: payment.payment_method_id,
+        amount: payment.amount,
+        status: payment.status,
+        transactionId: payment.transaction_id,
+        paymentType: payment.payment_type,
+        cardType: payment.card_type,
+        cardNumber: payment.card_number,
+        createdAt: payment.created_at
+      };
+    } catch (error) {
+      console.error('Error getting payment:', error);
+      return null;
+    }
+  },
+
+  // Get user's payment history
+  getUserPayments: async (userId) => {
+    try {
+      const database = await openDatabase();
+      const results = await database.getAllAsync(
+        `SELECT p.*, o.order_number, pm.card_type, pm.card_number 
+         FROM payments p
+         LEFT JOIN orders o ON p.order_id = o.id
+         LEFT JOIN payment_methods pm ON p.payment_method_id = pm.id
+         WHERE p.user_id = ?
+         ORDER BY p.created_at DESC`,
+        [userId]
+      );
+      
+      return results.map(payment => ({
+        id: payment.id,
+        orderId: payment.order_id,
+        orderNumber: payment.order_number,
+        amount: payment.amount,
+        status: payment.status,
+        transactionId: payment.transaction_id,
+        paymentType: payment.payment_type,
+        cardType: payment.card_type,
+        cardNumber: payment.card_number,
+        createdAt: payment.created_at
+      }));
+    } catch (error) {
+      console.error('Error getting user payments:', error);
+      return [];
+    }
+  },
+};
+
+/**
  * Database utilities
  */
 const dbUtils = {
@@ -622,6 +897,8 @@ const dbUtils = {
     try {
       const database = await openDatabase();
       await database.execAsync(`
+        DROP TABLE IF EXISTS payments;
+        DROP TABLE IF EXISTS payment_methods;
         DROP TABLE IF EXISTS order_items;
         DROP TABLE IF EXISTS orders;
         DROP TABLE IF EXISTS favorites;
@@ -682,6 +959,8 @@ export {
   cartOperations,
   orderOperations,
   favoritesOperations,
+  paymentMethodOperations,
+  paymentOperations,
   dbUtils,
 };
 
@@ -692,5 +971,7 @@ export default {
   cart: cartOperations,
   order: orderOperations,
   favorites: favoritesOperations,
+  paymentMethod: paymentMethodOperations,
+  payment: paymentOperations,
   utils: dbUtils,
 };

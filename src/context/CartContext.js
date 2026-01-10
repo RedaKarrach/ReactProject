@@ -215,7 +215,7 @@ export const CartProvider = ({ children }) => {
    * Get cart item count
    */
   const getCartItemCount = () => {
-    return cartItems.reduce((total, item) => total + item.quantity, 0);
+    return cartItems.reduce((total, item) => total + (item.quantity || 0), 0);
   };
 
   /**
@@ -223,7 +223,7 @@ export const CartProvider = ({ children }) => {
    */
   const getCartTotal = () => {
     return cartItems.reduce(
-      (total, item) => total + item.price * item.quantity,
+      (total, item) => total + (item.price || 0) * (item.quantity || 0),
       0
     );
   };
@@ -246,7 +246,7 @@ export const CartProvider = ({ children }) => {
   /**
    * Create order from cart
    */
-  const createOrder = async (userId, shippingAddress) => {
+  const createOrder = async (userId, shippingAddress, paymentMethodId = null) => {
     try {
       if (cartItems.length === 0) {
         throw new Error('Cart is empty');
@@ -257,7 +257,7 @@ export const CartProvider = ({ children }) => {
       }
 
       // Create order in database
-      const order = await OrderModel.create(user.id, cartItems, shippingAddress);
+      const order = await OrderModel.create(user.id, cartItems, shippingAddress, paymentMethodId);
 
       // Save order locally as backup
       await ordersStorage.addOrder(order);

@@ -1,6 +1,6 @@
 
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,10 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import database from '../services/database';
 import Header from '../components/Header';
 import Button from '../components/Button';
 
@@ -27,6 +29,49 @@ const CartScreen = ({ navigation }) => {
     createOrder,
   } = useCart();
   const { user } = useAuth();
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
+  const [shippingCost, setShippingCost] = useState(0);
+  const TAX_RATE = 0.08; // 8% tax
+
+  // Load default payment method
+  useEffect(() => {
+    loadDefaultPaymentMethod();
+  }, [user]);
+
+  // Calculate shipping cost
+  useEffect(() => {
+    const total = getCartTotal() || 0;
+    if (total === 0) {
+      setShippingCost(0);
+    } else if (total >= 100) {
+      setShippingCost(0); // Free shipping over $100
+    } else {
+      setShippingCost(9.99); // Flat rate shipping
+    }
+  }, [cartItems]);
+
+  const loadDefaultPaymentMethod = async () => {
+    try {
+      if (user?.id) {
+        const paymentMethods = await database.paymentMethod.getPaymentMethods(user.id);
+        const defaultMethod = paymentMethods.find(pm => pm.isDefault);
+        if (defaultMethod) {
+          setSelectedPaymentMethod(defaultMethod);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading payment method:', error);
+    }
+  };
+
+  const handlePaymentMethodPress = () => {
+    navigation.navigate('Payment', {
+      fromCheckout: true,
+      onPaymentSelected: (paymentMethod) => {
+        setSelectedPaymentMethod(paymentMethod);
+      },
+    });
+  };
 
  
   const handleRemoveItem = (productId, productName) => {
@@ -79,20 +124,48 @@ const CartScreen = ({ navigation }) => {
       return;
     }
 
+    // Check if payment method is selected
+    if (!selectedPaymentMethod) {
+      Alert.alert(
+        'No Payment Method',
+        'Please select a payment method to continue',
+        [
+          {
+            text: 'Add Payment Method',
+            onPress: handlePaymentMethodPress,
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+        ]
+      );
+      return;
+    }
+
+    const subtotal = getCartTotal() || 0;
+    const tax = subtotal * TAX_RATE;
+    const grandTotal = subtotal + shippingCost + tax;
+    const shippingAddress = user.address || '123 Main St, New York, USA';
+
     Alert.alert(
-      'Place Order',
-      `Total: $${getCartTotal().toFixed(2)}\n\nConfirm your order?`,
+      'Confirm Order',
+      `SHIPPING ADDRESS:\n${shippingAddress}\n\nORDER SUMMARY:\nSubtotal: $${subtotal.toFixed(2)}\nShipping: ${shippingCost === 0 ? 'FREE' : '$' + shippingCost.toFixed(2)}\nTax (8%): $${tax.toFixed(2)}\nTotal: $${grandTotal.toFixed(2)}\n\nPAYMENT METHOD:\n${selectedPaymentMethod?.cardType?.toUpperCase() || 'CARD'} •••• ${selectedPaymentMethod?.cardNumber?.slice(-4) || '****'}`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Confirm',
+          text: 'Place Order',
           onPress: async () => {
             try {
-              const result = await createOrder(user.id, {
-                address: '123 Main St',
-                city: 'New York',
-                country: 'USA',
-              });
+              const result = await createOrder(
+                user.id,
+                {
+                  address: user.address || '123 Main St',
+                  city: 'New York',
+                  country: 'USA',
+                },
+                selectedPaymentMethod.id
+              );
 
               if (result.success) {
                 // Clear cart after successful order
@@ -100,7 +173,7 @@ const CartScreen = ({ navigation }) => {
                 
                 Alert.alert(
                   'Success',
-                  'Your order has been placed!',
+                  'Your order has been placed and payment processed!',
                   [
                     {
                       text: 'View Orders',
@@ -192,25 +265,66 @@ const CartScreen = ({ navigation }) => {
   const renderFooter = () => {
     if (cartItems.length === 0) return null;
 
-    const total = getCartTotal();
-    const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+    const subtotal = getCartTotal() || 0;
+    const tax = subtotal * TAX_RATE;
+    const grandTotal = subtotal + shippingCost + tax;
+    const itemCount = cartItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
 
     return (
       <View style={styles.footer}>
+        {/* Payment Method Section */}
+        <TouchableOpacity
+          style={styles.paymentMethodContainer}
+          onPress={handlePaymentMethodPress}
+          activeOpacity={0.7}
+        >
+          <View style={styles.paymentMethodHeader}>
+            <Ionicons name="card-outline" size={24} color="#5B21B6" />
+            <Text style={styles.paymentMethodLabel}>Payment Method</Text>
+          </View>
+          
+          {selectedPaymentMethod ? (
+            <View style={styles.selectedPaymentInfo}>
+              <Text style={styles.selectedPaymentText}>
+                {selectedPaymentMethod.cardType?.toUpperCase()} •••• {selectedPaymentMethod.cardNumber?.slice(-4) || '****'}
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color="#999" />
+            </View>
+          ) : (
+            <View style={styles.addPaymentPrompt}>
+              <Text style={styles.addPaymentText}>Add payment method</Text>
+              <Ionicons name="chevron-forward" size={20} color="#5B21B6" />
+            </View>
+          )}
+        </TouchableOpacity>
+
         <View style={styles.totalContainer}>
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Items ({itemCount})</Text>
-            <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
+            <Text style={styles.totalLabel}>Subtotal ({itemCount} items)</Text>
+            <Text style={styles.totalValue}>${subtotal.toFixed(2)}</Text>
           </View>
           
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Shipping</Text>
-            <Text style={styles.totalValue}>Free</Text>
+            <Text style={[styles.totalValue, shippingCost === 0 && styles.freeShipping]}>
+              {shippingCost === 0 ? 'FREE' : `$${shippingCost.toFixed(2)}`}
+            </Text>
+          </View>
+          
+          {shippingCost > 0 && subtotal < 100 && (
+            <Text style={styles.shippingNote}>
+              Add ${(100 - subtotal).toFixed(2)} more for free shipping!
+            </Text>
+          )}
+          
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Tax (8%)</Text>
+            <Text style={styles.totalValue}>${tax.toFixed(2)}</Text>
           </View>
           
           <View style={[styles.totalRow, styles.grandTotalRow]}>
             <Text style={styles.grandTotalLabel}>Total</Text>
-            <Text style={styles.grandTotalValue}>${total.toFixed(2)}</Text>
+            <Text style={styles.grandTotalValue}>${grandTotal.toFixed(2)}</Text>
           </View>
         </View>
 
@@ -401,6 +515,18 @@ const styles = StyleSheet.create({
     color: '#1f2937',
     fontWeight: '600',
   },
+  freeShipping: {
+    color: '#059669',
+    fontWeight: 'bold',
+  },
+  shippingNote: {
+    fontSize: 12,
+    color: '#059669',
+    marginTop: -4,
+    marginBottom: 8,
+    textAlign: 'right',
+    fontStyle: 'italic',
+  },
   grandTotalRow: {
     borderTopWidth: 2,
     borderTopColor: '#f3f0ff',
@@ -435,6 +561,47 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 6,
+  },
+  paymentMethodContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e9d5ff',
+  },
+  paymentMethodHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  paymentMethodLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginLeft: 8,
+  },
+  selectedPaymentInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  selectedPaymentText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+  },
+  addPaymentPrompt: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  addPaymentText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#5B21B6',
   },
 });
 

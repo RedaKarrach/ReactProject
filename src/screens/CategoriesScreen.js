@@ -1,10 +1,10 @@
 /**
  * CategoriesScreen - Browse Products by Category
  * 
- * Clean, modern category browser with grid layout
+ 
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,132 +12,269 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  TextInput,
+  ScrollView,
   Dimensions,
+  ImageBackground,
+  Animated,
+  TextInput,
+  Easing,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { productAPI } from '../services/api';
+import ProductCard from '../components/ProductCard';
 import Header from '../components/Header';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 2;
+const CATEGORY_WIDTH = (width - 36) / 2;
 
-const CategoriesScreen = ({ navigation }) => {
-  const [categories, setCategories] = useState([]);
-  const [categoriesWithCount, setCategoriesWithCount] = useState([]);
-  const [filteredCategories, setFilteredCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const categoryConfig = {
-    'electronics': {
-      gradient: ['#667eea', '#764ba2'],
-      icon: 'phone-portrait-outline',
-      color: '#667eea',
+// Composant séparé pour le bouton horizontal de catégorie
+const HorizontalCategoryButton = ({ item, isSelected, onPress }) => {
+  const categoryData = {
+    'electronics': { 
+      color: '#FF6B6B', 
+      darkColor: '#CC5555',
+      icon: '📱',
     },
-    'jewelery': {
-      gradient: ['#f093fb', '#f5576c'],
-      icon: 'diamond-outline',
-      color: '#f093fb',
+    'jewelery': { 
+      color: '#FFD93D', 
+      darkColor: '#CCB030',
+      icon: '💎',
     },
-    "men's clothing": {
-      gradient: ['#4facfe', '#00f2fe'],
-      icon: 'shirt-outline',
-      color: '#4facfe',
+    'men\'s clothing': { 
+      color: '#6BCB77', 
+      darkColor: '#57A861',
+      icon: '👔',
     },
-    "women's clothing": {
-      gradient: ['#fa709a', '#fee140'],
-      icon: 'woman-outline',
-      color: '#fa709a',
+    'women\'s clothing': { 
+      color: '#4D96FF', 
+      darkColor: '#3D76CC',
+      icon: '👗',
     },
   };
 
+  const catInfo = categoryData[item.toLowerCase()] || { 
+    color: '#6BCB77', 
+    darkColor: '#57A861',
+    icon: '📦',
+  };
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.horizontalCategoryButton,
+        isSelected && { ...styles.horizontalCategoryButtonActive, backgroundColor: catInfo.color }
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Text style={styles.categoryIconSmall}>{catInfo.icon}</Text>
+      <Text style={[
+        styles.horizontalCategoryText,
+        isSelected && styles.horizontalCategoryTextActive
+      ]}>
+        {item ? item.charAt(0).toUpperCase() + item.slice(1) : ''}
+      </Text>
+    </TouchableOpacity>
+  );
+};
+
+// Composant séparé pour chaque carte de catégorie
+const CategoryCard = ({ item, isSelected, onPress }) => {
+  const animValue = useRef(new Animated.Value(0)).current;
+
+  const categoryData = {
+    'electronics': { 
+      color: '#FF6B6B', 
+      lightColor: '#FFE0E0',
+      darkColor: '#CC5555',
+      icon: '📱',
+    },
+    'jewelery': { 
+      color: '#FFD93D', 
+      lightColor: '#FFF5D0',
+      darkColor: '#CCB030',
+      icon: '💎',
+    },
+    'men\'s clothing': { 
+      color: '#6BCB77', 
+      lightColor: '#E0F5E0',
+      darkColor: '#57A861',
+      icon: '👔',
+    },
+    'women\'s clothing': { 
+      color: '#4D96FF', 
+      lightColor: '#E0EFFF',
+      darkColor: '#3D76CC',
+      icon: '👗',
+    },
+  };
+
+  const catInfo = categoryData[item.toLowerCase()] || { 
+    color: '#6BCB77', 
+    lightColor: '#E0F5E0',
+    darkColor: '#57A861',
+    icon: '📦',
+  };
+
+  useEffect(() => {
+    Animated.timing(animValue, {
+      toValue: isSelected ? 1 : 0,
+      duration: 300,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: false,
+    }).start();
+  }, [isSelected, animValue]);
+
+  return (
+    <Animated.View 
+      style={[
+        styles.categoryCardWrapper,
+        {
+          transform: [{ scale: isSelected ? 1.08 : 1 }],
+          shadowOpacity: isSelected ? 0.8 : 0.3,
+        }
+      ]}
+    >
+      <TouchableOpacity
+        style={[
+          styles.categoryCard,
+          {
+            backgroundColor: isSelected ? catInfo.color : catInfo.lightColor,
+            borderColor: catInfo.color,
+            borderWidth: isSelected ? 0 : 2,
+          }
+        ]}
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.categoryIcon}>{catInfo.icon}</Text>
+        <Text style={[
+          styles.categoryCardText,
+          { color: isSelected ? '#ffffff' : catInfo.darkColor }
+        ]}>
+          {item ? item.charAt(0).toUpperCase() + item.slice(1) : ''}
+        </Text>
+        {isSelected && (
+          <View style={[styles.selectedIndicator, { backgroundColor: catInfo.darkColor }]} />
+        )}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
+const CategoriesScreen = ({ navigation }) => {
+  const [categories, setCategories] = useState([]);
+  const [filteredCategories, setFilteredCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const bannerColorAnim = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     fetchCategories();
+    animateEntrance();
   }, []);
 
   useEffect(() => {
+    // Filtrer les catégories selon la recherche
     if (searchQuery.trim() === '') {
-      setFilteredCategories(categoriesWithCount);
+      setFilteredCategories(categories);
     } else {
-      const filtered = categoriesWithCount.filter(cat =>
-        cat.name.toLowerCase().includes(searchQuery.toLowerCase())
+      const filtered = categories.filter(cat =>
+        cat.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setFilteredCategories(filtered);
     }
-  }, [searchQuery, categoriesWithCount]);
+  }, [searchQuery, categories]);
+
+  const animateEntrance = () => {
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 500,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   const fetchCategories = async () => {
     try {
-      const cats = await productAPI.getCategories();
+      const data = await productAPI.getCategories();
+      setCategories(data);
+      setFilteredCategories(data);
       
-      // Get product count for each category
-      const categoriesData = await Promise.all(
-        cats.map(async (category) => {
-          const products = await productAPI.getProductsByCategory(category);
-          return {
-            name: category,
-            count: products.length,
-            config: categoryConfig[category.toLowerCase()] || {
-              gradient: ['#667eea', '#764ba2'],
-              icon: 'grid-outline',
-              color: '#667eea',
-            },
-          };
-        })
-      );
-
-      setCategories(cats);
-      setCategoriesWithCount(categoriesData);
-      setFilteredCategories(categoriesData);
+      // Charger la première catégorie par défaut
+      if (data && data.length > 0) {
+        loadCategoryProducts(data[0]);
+      }
     } catch (error) {
-      console.error('Error loading categories:', error);
+      console.error('Erreur chargement catégories:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const navigateToCategoryProducts = async (category) => {
+  const loadCategoryProducts = async (category) => {
+    setSelectedCategory(category);
+    setLoadingProducts(true);
+    
     try {
-      const products = await productAPI.getProductsByCategory(category.name);
-      navigation.navigate('CategoryProducts', {
-        category: category.name,
-        products: products,
-        color: category.config.color,
-      });
+      const data = await productAPI.getProductsByCategory(category);
+      setProducts(data);
     } catch (error) {
-      console.error('Error loading products:', error);
+      console.error('Erreur chargement produits:', error);
+    } finally {
+      setLoadingProducts(false);
     }
   };
 
-  const renderCategoryCard = ({ item }) => (
-    <TouchableOpacity
-      style={styles.categoryCard}
-      onPress={() => navigateToCategoryProducts(item)}
-      activeOpacity={0.8}
-    >
-      <View style={[styles.iconContainer, { backgroundColor: item.config.color + '20' }]}>
-        <Ionicons name={item.config.icon} size={40} color={item.config.color} />
-      </View>
-      <View style={styles.categoryInfo}>
-        <Text style={styles.categoryName} numberOfLines={2}>
-          {item.name.charAt(0).toUpperCase() + item.name.slice(1)}
-        </Text>
-        <Text style={styles.productCount}>{item.count} products</Text>
-      </View>
-      <View style={[styles.arrowContainer, { backgroundColor: item.config.color }]}>
-        <Ionicons name="arrow-forward" size={20} color="#fff" />
-      </View>
-    </TouchableOpacity>
+  const navigateToProductDetails = (product) => {
+    navigation.navigate('ProductDetails', { product });
+  };
+
+  const renderCategoryButton = ({ item }) => (
+    <HorizontalCategoryButton
+      item={item}
+      isSelected={item === selectedCategory}
+      onPress={() => loadCategoryProducts(item)}
+    />
+  );
+
+  const renderProductItem = ({ item }) => (
+    <ProductCard
+      product={item}
+      onPress={() => navigateToProductDetails(item)}
+    />
   );
 
   if (loading) {
     return (
       <View style={styles.container}>
-        <Header title="Categories" />
+        <Header title="Catégories" />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#667eea" />
-          <Text style={styles.loadingText}>Loading categories...</Text>
+          <ActivityIndicator size="large" color="#3B82F6" />
+          <Text style={styles.loadingText}>Chargement des catégories...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (!categories || categories.length === 0) {
+    return (
+      <View style={styles.container}>
+        <Header title="Catégories" />
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Aucune catégorie disponible</Text>
         </View>
       </View>
     );
@@ -145,51 +282,90 @@ const CategoriesScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header title="Categories" />
+      <Header title="Catégories" />
       
       {/* Search Bar */}
-      <View style={styles.searchSection}>
+      <Animated.View 
+        style={[
+          styles.searchSection,
+          {
+            opacity: opacityAnim,
+            transform: [{ scale: scaleAnim }]
+          }
+        ]}
+      >
         <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={20} color="#9ca3af" style={styles.searchIcon} />
+          <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search categories..."
+            placeholder="Rechercher une catégorie..."
             placeholderTextColor="#9ca3af"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery !== '' && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color="#9ca3af" />
+              <Text style={styles.clearIcon}>✕</Text>
             </TouchableOpacity>
           )}
         </View>
-      </View>
+      </Animated.View>
 
-      {/* Header Info */}
-      <View style={styles.headerInfo}>
-        <Text style={styles.headerTitle}>Shop by Category</Text>
-        <Text style={styles.headerSubtitle}>
-          {filteredCategories.length} {filteredCategories.length === 1 ? 'category' : 'categories'} available
-        </Text>
-      </View>
-
-      {/* Categories Grid */}
-      {filteredCategories.length > 0 ? (
-        <FlatList
-          data={filteredCategories}
-          renderItem={renderCategoryCard}
-          keyExtractor={(item) => item.name}
-          contentContainerStyle={styles.categoriesList}
-          showsVerticalScrollIndicator={false}
-        />
-      ) : (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="search-outline" size={64} color="#d1d5db" />
-          <Text style={styles.emptyText}>No categories found</Text>
-          <Text style={styles.emptySubtext}>Try a different search term</Text>
+      {/* Beautiful Banner Section */}
+      <View style={styles.bannerSection}>
+        <View style={styles.bannerGradient}>
+          <View style={styles.bannerContent}>
+            <Text style={styles.bannerEmoji}>🛍️</Text>
+            <Text style={styles.bannerTitle}>Bienvenue dans nos collections</Text>
+            <Text style={styles.bannerSubtitle}>Explorez nos meilleures catégories</Text>
+          </View>
         </View>
-      )}
+
+        {/* Horizontal Categories List */}
+        <View style={styles.categoriesHorizontal}>
+          <FlatList
+            horizontal
+            data={filteredCategories}
+            renderItem={renderCategoryButton}
+            keyExtractor={(item, index) => `category-${index}`}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoriesHorizontalList}
+          />
+        </View>
+      </View>
+
+      {/* Products Section */}
+      <View style={styles.productsSection}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>
+            {selectedCategory ? (selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)) : 'Tous les produits'}
+          </Text>
+          {selectedCategory && (
+            <Text style={styles.productCount}>{products.length} articles</Text>
+          )}
+        </View>
+
+        {loadingProducts ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FF6B6B" />
+            <Text style={styles.loadingText}>Chargement des produits...</Text>
+          </View>
+        ) : products && products.length > 0 ? (
+          <FlatList
+            data={products}
+            renderItem={renderProductItem}
+            keyExtractor={(item) => item.id.toString()}
+            numColumns={2}
+            contentContainerStyle={styles.productsList}
+            showsVerticalScrollIndicator={false}
+          />
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyIcon}>📭</Text>
+            <Text style={styles.emptyText}>Aucun produit dans cette catégorie</Text>
+          </View>
+        )}
+      </View>
     </View>
   );
 };
@@ -197,118 +373,211 @@ const CategoriesScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fb',
+    backgroundColor: '#F8FAFC',
   },
   searchSection: {
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#E2E8F0',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#F1F5F9',
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 48,
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
   },
   searchIcon: {
+    fontSize: 20,
     marginRight: 8,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#1f2937',
+    color: '#1F2937',
+    fontWeight: '500',
   },
-  headerInfo: {
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    backgroundColor: '#fff',
-    marginBottom: 8,
+  clearIcon: {
+    fontSize: 18,
+    color: '#6B7280',
+    marginLeft: 8,
   },
-  headerTitle: {
+  bannerSection: {
+    backgroundColor: '#ffffff',
+  },
+  bannerGradient: {
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    backgroundColor: '#5B21B6',
+  },
+  bannerContent: {
+    alignItems: 'center',
+  },
+  bannerEmoji: {
+    fontSize: 64,
+    marginBottom: 12,
+  },
+  bannerTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 4,
+    fontWeight: '800',
+    color: '#ffffff',
+    textAlign: 'center',
+    marginBottom: 6,
+    letterSpacing: 0.5,
   },
-  headerSubtitle: {
+  bannerSubtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#ffffff',
+    textAlign: 'center',
+    opacity: 0.95,
+    fontWeight: '500',
   },
-  categoriesList: {
-    padding: 16,
-    paddingBottom: 32,
+  categoriesHorizontal: {
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
-  categoryCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+  categoriesHorizontalList: {
+    paddingHorizontal: 8,
+    gap: 10,
+  },
+  horizontalCategoryButton: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
-  iconContainer: {
-    width: 72,
-    height: 72,
+  horizontalCategoryButtonActive: {
+    elevation: 4,
+    shadowOpacity: 0.2,
+  },
+  categoryIconSmall: {
+    fontSize: 16,
+  },
+  horizontalCategoryText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4B5563',
+  },
+  horizontalCategoryTextActive: {
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 8,
+    letterSpacing: 0.3,
+  },
+  sectionHeader: {
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  productCount: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#9CA3AF',
+  },
+  categoryCardWrapper: {
+    width: CATEGORY_WIDTH,
+    height: 150,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    borderRadius: 16,
+    overflow: 'visible',
+  },
+  categoryCard: {
+    flex: 1,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    overflow: 'hidden',
+    elevation: 4,
   },
-  categoryInfo: {
+  categoryIcon: {
+    fontSize: 56,
+    marginBottom: 8,
+  },
+  categoryCardText: {
+    fontSize: 15,
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: 0.2,
+  },
+  selectedIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  productsSection: {
     flex: 1,
+    backgroundColor: '#F8FAFC',
   },
-  categoryName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 4,
-  },
-  productCount: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  arrowContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+  productsList: {
+    padding: 12,
+    paddingTop: 8,
+    paddingBottom: 24,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F8FAFC',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#6b7280',
+    color: '#6B7280',
+    fontWeight: '500',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 24,
+  },
+  emptyIcon: {
+    fontSize: 64,
+    marginBottom: 16,
   },
   emptyText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: 16,
+    color: '#9CA3AF',
+    fontWeight: '500',
     textAlign: 'center',
   },
 });

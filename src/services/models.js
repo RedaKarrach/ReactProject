@@ -229,19 +229,42 @@ export const OrderModel = {
   /**
    * Create new order
    */
-  create: async (userId, cartItems, shippingAddress) => {
+  create: async (userId, cartItems, shippingAddress, paymentMethodId = null) => {
     try {
       const totalAmount = cartItems.reduce(
         (total, item) => total + (item.price * item.quantity),
         0
       );
       
-      return await database.order.createOrder(
+      // Format shipping address as string if it's an object
+      const shippingAddressStr = typeof shippingAddress === 'string' 
+        ? shippingAddress 
+        : JSON.stringify(shippingAddress);
+      
+      const orderResult = await database.order.createOrder(
         userId,
         cartItems,
         totalAmount,
-        shippingAddress
+        shippingAddressStr
       );
+
+      // If payment method provided, create payment record
+      if (paymentMethodId) {
+        try {
+          await database.payment.createPayment(
+            orderResult.id,
+            userId,
+            paymentMethodId,
+            totalAmount,
+            'card'
+          );
+        } catch (paymentError) {
+          console.error('Error creating payment record:', paymentError);
+          // Continue even if payment record fails
+        }
+      }
+      
+      return orderResult;
     } catch (error) {
       console.error('Error creating order:', error);
       throw error;

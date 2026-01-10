@@ -13,14 +13,12 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
-import { OrderModel } from '../services/models';
-import { useAuth } from '../context/AuthContext';
+import { ordersStorage } from '../services/storage';
 import Header from '../components/Header';
 import Loader from '../components/Loader';
 
 
 const OrdersScreen = () => {
-  const { user } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -32,15 +30,10 @@ const OrdersScreen = () => {
   
   const loadOrders = async () => {
     try {
-      if (!user || !user.id) {
-        setOrders([]);
-        return;
-      }
-      const dbOrders = await OrderModel.getUserOrders(user.id);
-      setOrders(dbOrders || []);
+      const storedOrders = await ordersStorage.getOrders();
+      setOrders(storedOrders);
     } catch (error) {
       console.error('Error loading orders:', error);
-      setOrders([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -91,7 +84,7 @@ const OrdersScreen = () => {
       {/* Order Header */}
       <View style={styles.orderHeader}>
         <View>
-          <Text style={styles.orderId}>Order #{item.orderNumber || item.id}</Text>
+          <Text style={styles.orderId}>Order #{item.id}</Text>
           <Text style={styles.orderDate}>{formatDate(item.createdAt)}</Text>
         </View>
         <View
@@ -106,7 +99,7 @@ const OrdersScreen = () => {
               { color: getStatusColor(item.status) },
             ]}
           >
-            {item.status ? (item.status.charAt(0).toUpperCase() + item.status.slice(1)) : 'Pending'}
+            {item.status ? item.status.charAt(0).toUpperCase() + item.status.slice(1) : 'Pending'}
           </Text>
         </View>
       </View>
@@ -115,19 +108,19 @@ const OrdersScreen = () => {
       <View style={styles.orderDetails}>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Items:</Text>
-          <Text style={styles.detailValue}>{item.items ? item.items.length : 0}</Text>
+          <Text style={styles.detailValue}>{item.itemCount}</Text>
         </View>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Total:</Text>
-          <Text style={styles.detailValueBold}>${item.totalAmount ? item.totalAmount.toFixed(2) : '0.00'}</Text>
+          <Text style={styles.detailValueBold}>${item.total ? item.total.toFixed(2) : item.totalAmount ? item.totalAmount.toFixed(2) : '0.00'}</Text>
         </View>
       </View>
 
       {/* Order Items Preview */}
       <View style={styles.itemsPreview}>
-        {item.items && item.items.length > 0 && item.items.slice(0, 3).map((product, index) => (
+        {item.items && item.items.slice(0, 3).map((product, index) => (
           <Text key={index} style={styles.itemPreviewText} numberOfLines={1}>
-            • {product.title || 'Product'}
+            • {product?.title || 'Item'}
           </Text>
         ))}
         {item.items && item.items.length > 3 && (
@@ -138,23 +131,16 @@ const OrdersScreen = () => {
       </View>
 
       {/* Shipping Address */}
-      {item.shippingAddress && (() => {
-        try {
-          const address = typeof item.shippingAddress === 'string' 
-            ? JSON.parse(item.shippingAddress) 
-            : item.shippingAddress;
-          return (
-            <View style={styles.addressContainer}>
-              <Text style={styles.addressLabel}>Shipping to:</Text>
-              <Text style={styles.addressText}>
-                {address.address || ''}{address.address && ', '}{address.city || ''}{address.city && ', '}{address.country || ''}
-              </Text>
-            </View>
-          );
-        } catch (e) {
-          return null;
-        }
-      })()}
+      {item.shippingAddress && (
+        <View style={styles.addressContainer}>
+          <Text style={styles.addressLabel}>Shipping to:</Text>
+          <Text style={styles.addressText}>
+            {typeof item.shippingAddress === 'string' 
+              ? item.shippingAddress 
+              : `${item.shippingAddress.address || ''}, ${item.shippingAddress.city || ''}, ${item.shippingAddress.country || ''}`}
+          </Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
 

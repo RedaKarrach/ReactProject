@@ -17,6 +17,7 @@ import AddressesScreen from '../screens/AddressesScreen';
 import PaymentMethodsScreen from '../screens/PaymentMethodsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import CategoryProductsScreen from '../screens/CategoryProductsScreen';
+import PaymentScreen from '../screens/PaymentScreen';
 import Loader from '../components/Loader';
 
 const Stack = createStackNavigator();
@@ -70,6 +71,10 @@ const AppNavigator = () => {
           <Stack.Screen
             name="CategoryProducts"
             component={CategoryProductsScreen}
+          />
+          <Stack.Screen
+            name="Payment"
+            component={PaymentScreen}
           />
         </Stack.Navigator>
       ) : (
