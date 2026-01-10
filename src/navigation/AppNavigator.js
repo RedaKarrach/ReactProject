@@ -12,6 +12,10 @@ import AuthNavigator from './AuthNavigator';
 import TabNavigator from './TabNavigator';
 import ProductDetailsScreen from '../screens/ProductDetailsScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
+import WishlistScreen from '../screens/WishlistScreen';
+import AddressesScreen from '../screens/AddressesScreen';
+import PaymentMethodsScreen from '../screens/PaymentMethodsScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 import Loader from '../components/Loader';
 
 const Stack = createStackNavigator();
@@ -45,6 +49,22 @@ const AppNavigator = () => {
           <Stack.Screen
             name="EditProfile"
             component={EditProfileScreen}
+          />
+          <Stack.Screen
+            name="Wishlist"
+            component={WishlistScreen}
+          />
+          <Stack.Screen
+            name="Addresses"
+            component={AddressesScreen}
+          />
+          <Stack.Screen
+            name="PaymentMethods"
+            component={PaymentMethodsScreen}
+          />
+          <Stack.Screen
+            name="Settings"
+            component={SettingsScreen}
           />
         </Stack.Navigator>
       ) : (
