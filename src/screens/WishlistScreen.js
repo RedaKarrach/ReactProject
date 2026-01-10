@@ -15,6 +15,7 @@ import {
   Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import Loader from '../components/Loader';
 
@@ -97,13 +98,13 @@ const WishlistScreen = ({ navigation }) => {
           {item.title}
         </Text>
         <Text style={styles.itemCategory}>{item.category}</Text>
-        <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
+        <Text style={styles.itemPrice}>${item.price ? item.price.toFixed(2) : '0.00'}</Text>
       </View>
       <TouchableOpacity
         style={styles.removeButton}
         onPress={() => removeFromWishlist(item.id)}
       >
-        <Text style={styles.removeIcon}>🗑️</Text>
+        <Ionicons name="trash-outline" size={22} color="#dc2626" />
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -113,7 +114,7 @@ const WishlistScreen = ({ navigation }) => {
    */
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyIcon}>❤️</Text>
+      <Ionicons name="heart-outline" size={80} color="#d1d5db" />
       <Text style={styles.emptyTitle}>Your Wishlist is Empty</Text>
       <Text style={styles.emptySubtitle}>
         Add products you love to your wishlist
@@ -221,18 +222,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 8,
   },
-  removeIcon: {
-    fontSize: 24,
-  },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 32,
-  },
-  emptyIcon: {
-    fontSize: 80,
-    marginBottom: 16,
   },
   emptyTitle: {
     fontSize: 24,

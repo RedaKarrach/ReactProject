@@ -17,6 +17,7 @@ import {
   ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import Button from '../components/Button';
 
@@ -228,7 +229,7 @@ const PaymentMethodsScreen = ({ navigation }) => {
       )}
       
       <View style={styles.cardHeader}>
-        <Text style={styles.cardIcon}>{getCardIcon(item.cardNumber)}</Text>
+        <Ionicons name="card" size={40} color="#5B21B6" style={styles.cardIcon} />
         <View style={styles.cardInfo}>
           <Text style={styles.cardNumber}>{formatCardNumber(item.cardNumber)}</Text>
           <Text style={styles.cardHolder}>{item.cardHolder}</Text>
@@ -268,7 +269,7 @@ const PaymentMethodsScreen = ({ navigation }) => {
    */
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyIcon}>💳</Text>
+      <Ionicons name="card-outline" size={80} color="#d1d5db" />
       <Text style={styles.emptyTitle}>No Payment Methods Yet</Text>
       <Text style={styles.emptySubtitle}>
         Add a payment method for faster checkout
@@ -453,7 +454,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   cardIcon: {
-    fontSize: 40,
     marginRight: 16,
   },
   cardInfo: {
@@ -507,10 +507,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 32,
-  },
-  emptyIcon: {
-    fontSize: 80,
-    marginBottom: 16,
   },
   emptyTitle: {
     fontSize: 24,

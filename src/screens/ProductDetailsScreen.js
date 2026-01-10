@@ -5,7 +5,7 @@
  * @author Reda Karrach - Cart Integration
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,12 +14,16 @@ import {
   StyleSheet,
   Dimensions,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import { useCart } from '../context/CartContext';
 import Header from '../components/Header';
 import Button from '../components/Button';
 
 const { width } = Dimensions.get('window');
+const WISHLIST_KEY = '@wishlist';
 
 /**
  * ProductDetailsScreen Component
@@ -29,9 +33,57 @@ const ProductDetailsScreen = ({ route, navigation }) => {
   const { product } = route.params;
   const { addToCart, isInCart, getItemQuantity } = useCart();
   const [quantity, setQuantity] = useState(1);
+  const [isInWishlist, setIsInWishlist] = useState(false);
 
   const productInCart = isInCart(product.id);
   const currentQuantity = getItemQuantity(product.id);
+
+  useEffect(() => {
+    checkWishlistStatus();
+  }, []);
+
+  /**
+   * Check if product is in wishlist
+   */
+  const checkWishlistStatus = async () => {
+    try {
+      const data = await AsyncStorage.getItem(WISHLIST_KEY);
+      if (data) {
+        const wishlist = JSON.parse(data);
+        const inWishlist = wishlist.some(item => item.id === product.id);
+        setIsInWishlist(inWishlist);
+      }
+    } catch (error) {
+      console.error('Error checking wishlist:', error);
+    }
+  };
+
+  /**
+   * Toggle wishlist status
+   */
+  const toggleWishlist = async () => {
+    try {
+      const data = await AsyncStorage.getItem(WISHLIST_KEY);
+      let wishlist = data ? JSON.parse(data) : [];
+
+      if (isInWishlist) {
+        // Remove from wishlist
+        wishlist = wishlist.filter(item => item.id !== product.id);
+        setIsInWishlist(false);
+        Alert.alert('Removed', `${product.title} removed from wishlist`);
+      } else {
+        // Add to wishlist
+        wishlist.push(product);
+        setIsInWishlist(true);
+        Alert.alert('Added', `${product.title} added to wishlist`);
+      }
+
+      await AsyncStorage.setItem(WISHLIST_KEY, JSON.stringify(wishlist));
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
+      Alert.alert('Error', 'Failed to update wishlist');
+    }
+  };
 
   /**
    * Handle add to cart
@@ -97,7 +149,7 @@ const ProductDetailsScreen = ({ route, navigation }) => {
           <Text style={styles.title}>{product.title}</Text>
 
           {/* Price */}
-          <Text style={styles.price}>${product.price.toFixed(2)}</Text>
+          <Text style={styles.price}>${product.price ? product.price.toFixed(2) : '0.00'}</Text>
 
           {/* Rating */}
           {product.rating && (
@@ -156,12 +208,25 @@ const ProductDetailsScreen = ({ route, navigation }) => {
 
       {/* Add to Cart Button */}
       <View style={styles.footer}>
-        <Button
-          title={productInCart ? 'Add More to Cart' : 'Add to Cart'}
-          onPress={handleAddToCart}
-          fullWidth
-          size="large"
-        />
+        <TouchableOpacity
+          style={styles.wishlistButton}
+          onPress={toggleWishlist}
+          activeOpacity={0.7}
+        >
+          <Ionicons 
+            name={isInWishlist ? 'heart' : 'heart-outline'} 
+            size={28} 
+            color="#dc2626" 
+          />
+        </TouchableOpacity>
+        <View style={styles.addToCartButtonContainer}>
+          <Button
+            title={productInCart ? 'Add More to Cart' : 'Add to Cart'}
+            onPress={handleAddToCart}
+            fullWidth
+            size="large"
+          />
+        </View>
       </View>
     </View>
   );
@@ -171,6 +236,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fb',
+  },
+  wishlistButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    marginRight: 12,
+  },
+  addToCartButtonContainer: {
+    flex: 1,
   },
   content: {
     flex: 1,
@@ -313,6 +392,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 20,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',

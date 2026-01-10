@@ -72,7 +72,7 @@ const ProductCard = ({ product, onPress }) => {
             {title}
           </Text>
           <View style={styles.priceContainer}>
-            <Text style={styles.price}>${price.toFixed(2)}</Text>
+            <Text style={styles.price}>${price ? price.toFixed(2) : '0.00'}</Text>
             <View style={styles.badge}>
               <Text style={styles.badgeText}>→</Text>
             </View>

@@ -13,12 +13,14 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
-import { ordersStorage } from '../services/storage';
+import { OrderModel } from '../services/models';
+import { useAuth } from '../context/AuthContext';
 import Header from '../components/Header';
 import Loader from '../components/Loader';
 
 
 const OrdersScreen = () => {
+  const { user } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -30,10 +32,15 @@ const OrdersScreen = () => {
   
   const loadOrders = async () => {
     try {
-      const storedOrders = await ordersStorage.getOrders();
-      setOrders(storedOrders);
+      if (!user || !user.id) {
+        setOrders([]);
+        return;
+      }
+      const dbOrders = await OrderModel.getUserOrders(user.id);
+      setOrders(dbOrders || []);
     } catch (error) {
       console.error('Error loading orders:', error);
+      setOrders([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -84,7 +91,7 @@ const OrdersScreen = () => {
       {/* Order Header */}
       <View style={styles.orderHeader}>
         <View>
-          <Text style={styles.orderId}>Order #{item.id}</Text>
+          <Text style={styles.orderId}>Order #{item.orderNumber || item.id}</Text>
           <Text style={styles.orderDate}>{formatDate(item.createdAt)}</Text>
         </View>
         <View
@@ -99,7 +106,7 @@ const OrdersScreen = () => {
               { color: getStatusColor(item.status) },
             ]}
           >
-            {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+            {item.status ? (item.status.charAt(0).toUpperCase() + item.status.slice(1)) : 'Pending'}
           </Text>
         </View>
       </View>
@@ -108,22 +115,22 @@ const OrdersScreen = () => {
       <View style={styles.orderDetails}>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Items:</Text>
-          <Text style={styles.detailValue}>{item.itemCount}</Text>
+          <Text style={styles.detailValue}>{item.items ? item.items.length : 0}</Text>
         </View>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Total:</Text>
-          <Text style={styles.detailValueBold}>${item.total.toFixed(2)}</Text>
+          <Text style={styles.detailValueBold}>${item.totalAmount ? item.totalAmount.toFixed(2) : '0.00'}</Text>
         </View>
       </View>
 
       {/* Order Items Preview */}
       <View style={styles.itemsPreview}>
-        {item.items.slice(0, 3).map((product, index) => (
+        {item.items && item.items.length > 0 && item.items.slice(0, 3).map((product, index) => (
           <Text key={index} style={styles.itemPreviewText} numberOfLines={1}>
-            • {product.title}
+            • {product.title || 'Product'}
           </Text>
         ))}
-        {item.items.length > 3 && (
+        {item.items && item.items.length > 3 && (
           <Text style={styles.moreItems}>
             +{item.items.length - 3} more items
           </Text>
@@ -131,14 +138,23 @@ const OrdersScreen = () => {
       </View>
 
       {/* Shipping Address */}
-      {item.shippingAddress && (
-        <View style={styles.addressContainer}>
-          <Text style={styles.addressLabel}>Shipping to:</Text>
-          <Text style={styles.addressText}>
-            {item.shippingAddress.address}, {item.shippingAddress.city}, {item.shippingAddress.country}
-          </Text>
-        </View>
-      )}
+      {item.shippingAddress && (() => {
+        try {
+          const address = typeof item.shippingAddress === 'string' 
+            ? JSON.parse(item.shippingAddress) 
+            : item.shippingAddress;
+          return (
+            <View style={styles.addressContainer}>
+              <Text style={styles.addressLabel}>Shipping to:</Text>
+              <Text style={styles.addressText}>
+                {address.address || ''}{address.address && ', '}{address.city || ''}{address.city && ', '}{address.country || ''}
+              </Text>
+            </View>
+          );
+        } catch (e) {
+          return null;
+        }
+      })()}
     </TouchableOpacity>
   );
 

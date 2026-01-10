@@ -139,7 +139,7 @@ const CartScreen = ({ navigation }) => {
         <Text style={styles.itemTitle} numberOfLines={2}>
           {item.title}
         </Text>
-        <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
+        <Text style={styles.itemPrice}>${item.price ? item.price.toFixed(2) : '0.00'}</Text>
         
         <View style={styles.quantityContainer}>
           <TouchableOpacity

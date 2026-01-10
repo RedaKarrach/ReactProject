@@ -17,6 +17,7 @@ import {
   ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import Header from '../components/Header';
 import Button from '../components/Button';
 
@@ -228,7 +229,7 @@ const AddressesScreen = ({ navigation }) => {
    */
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyIcon}>📍</Text>
+      <Ionicons name="location-outline" size={80} color="#d1d5db" />
       <Text style={styles.emptyTitle}>No Addresses Yet</Text>
       <Text style={styles.emptySubtitle}>
         Add a shipping address to make checkout faster
@@ -458,10 +459,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 32,
-  },
-  emptyIcon: {
-    fontSize: 80,
-    marginBottom: 16,
   },
   emptyTitle: {
     fontSize: 24,

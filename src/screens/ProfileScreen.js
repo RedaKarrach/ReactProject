@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import Header from '../components/Header';
 import Button from '../components/Button';
@@ -52,35 +53,35 @@ const ProfileScreen = ({ navigation }) => {
   const menuItems = [
     {
       id: 1,
-      icon: '📦',
+      icon: 'cube-outline',
       title: 'My Orders',
       subtitle: 'View order history',
       onPress: () => navigation.navigate('Orders'),
     },
     {
       id: 2,
-      icon: '❤️',
+      icon: 'heart-outline',
       title: 'Wishlist',
       subtitle: 'Your favorite items',
       onPress: () => navigation.navigate('Wishlist'),
     },
     {
       id: 3,
-      icon: '📍',
+      icon: 'location-outline',
       title: 'Addresses',
       subtitle: 'Manage shipping addresses',
       onPress: () => navigation.navigate('Addresses'),
     },
     {
       id: 4,
-      icon: '💳',
+      icon: 'card-outline',
       title: 'Payment Methods',
       subtitle: 'Manage payment options',
       onPress: () => navigation.navigate('PaymentMethods'),
     },
     {
       id: 6,
-      icon: '⚙️',
+      icon: 'settings-outline',
       title: 'Settings',
       subtitle: 'App preferences',
       onPress: () => navigation.navigate('Settings'),
@@ -122,7 +123,7 @@ const ProfileScreen = ({ navigation }) => {
               activeOpacity={0.7}
             >
               <View style={styles.menuItemLeft}>
-                <Text style={styles.menuIcon}>{item.icon}</Text>
+                <Ionicons name={item.icon} size={24} color="#5B21B6" style={styles.menuIcon} />
                 <View style={styles.menuTextContainer}>
                   <Text style={styles.menuTitle}>{item.title}</Text>
                   <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
@@ -179,7 +180,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: 'linear-gradient(135deg, #5B21B6 0%, #7c3aed 100%)',
+    backgroundColor: '#5B21B6',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -256,7 +257,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   menuIcon: {
-    fontSize: 24,
     marginRight: 16,
   },
   menuTextContainer: {

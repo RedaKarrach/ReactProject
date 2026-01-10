@@ -16,6 +16,7 @@ import WishlistScreen from '../screens/WishlistScreen';
 import AddressesScreen from '../screens/AddressesScreen';
 import PaymentMethodsScreen from '../screens/PaymentMethodsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import CategoryProductsScreen from '../screens/CategoryProductsScreen';
 import Loader from '../components/Loader';
 
 const Stack = createStackNavigator();
@@ -65,6 +66,10 @@ const AppNavigator = () => {
           <Stack.Screen
             name="Settings"
             component={SettingsScreen}
+          />
+          <Stack.Screen
+            name="CategoryProducts"
+            component={CategoryProductsScreen}
           />
         </Stack.Navigator>
       ) : (

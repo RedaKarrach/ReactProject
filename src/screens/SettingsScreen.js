@@ -15,6 +15,7 @@ import {
   Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import Header from '../components/Header';
 
 const SETTINGS_KEY = '@app_settings';
@@ -237,7 +238,10 @@ const SettingsScreen = ({ navigation }) => {
       <ScrollView style={styles.content}>
         {/* Notifications Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🔔 Notifications</Text>
+          <View style={styles.sectionTitleContainer}>
+            <Ionicons name="notifications-outline" size={20} color="#5B21B6" />
+            <Text style={styles.sectionTitle}>Notifications</Text>
+          </View>
           {renderSettingItem(
             'Push Notifications',
             'Receive push notifications',
@@ -266,7 +270,10 @@ const SettingsScreen = ({ navigation }) => {
 
         {/* Privacy Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🔒 Privacy</Text>
+          <View style={styles.sectionTitleContainer}>
+            <Ionicons name="lock-closed-outline" size={20} color="#5B21B6" />
+            <Text style={styles.sectionTitle}>Privacy</Text>
+          </View>
           {renderSettingItem(
             'Share Usage Data',
             'Help improve the app',
@@ -283,7 +290,10 @@ const SettingsScreen = ({ navigation }) => {
 
         {/* Appearance Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🎨 Appearance</Text>
+          <View style={styles.sectionTitleContainer}>
+            <Ionicons name="color-palette-outline" size={20} color="#5B21B6" />
+            <Text style={styles.sectionTitle}>Appearance</Text>
+          </View>
           {renderSettingItem(
             'Dark Mode',
             'Use dark theme (Coming Soon)',
@@ -294,7 +304,10 @@ const SettingsScreen = ({ navigation }) => {
 
         {/* Other Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>⚙️ Other</Text>
+          <View style={styles.sectionTitleContainer}>
+            <Ionicons name="ellipsis-horizontal-outline" size={20} color="#5B21B6" />
+            <Text style={styles.sectionTitle}>Other</Text>
+          </View>
           {renderSettingItem(
             'Auto-play Videos',
             'Automatically play product videos',
@@ -311,7 +324,10 @@ const SettingsScreen = ({ navigation }) => {
 
         {/* Actions Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🛠️ Actions</Text>
+          <View style={styles.sectionTitleContainer}>
+            <Ionicons name="build-outline" size={20} color="#5B21B6" />
+            <Text style={styles.sectionTitle}>Actions</Text>
+          </View>
           {renderActionButton('Clear Cache', clearCache)}
           {renderActionButton('Reset Settings', resetSettings, true)}
         </View>
@@ -384,11 +400,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
   },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#1f2937',
-    marginBottom: 16,
   },
   settingItem: {
     flexDirection: 'row',

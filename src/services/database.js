@@ -148,7 +148,7 @@ const userOperations = {
         'INSERT INTO users (email, password, username) VALUES (?, ?, ?)',
         [email, password, username]
       );
-      return result.lastInsertRowId;
+      return result.lastInsertRowId || result.insertId;
     } catch (error) {
       console.error('Error creating user:', error);
       throw error;
@@ -427,20 +427,40 @@ const orderOperations = {
   // Create order
   createOrder: async (userId, cartItems, totalAmount, shippingAddress) => {
     try {
+      console.log('Creating order with:', { userId, totalAmount, itemCount: cartItems.length });
+      
       const database = await openDatabase();
       const orderNumber = `ORD-${Date.now()}-${userId}`;
+      
+      // Stringify shipping address if it's an object
+      const addressStr = typeof shippingAddress === 'string' 
+        ? shippingAddress 
+        : JSON.stringify(shippingAddress);
+      
+      console.log('Inserting order into database...');
       
       // Create order
       const orderResult = await database.runAsync(
         `INSERT INTO orders (user_id, order_number, total_amount, status, shipping_address)
          VALUES (?, ?, ?, ?, ?)`,
-        [userId, orderNumber, totalAmount, 'pending', shippingAddress]
+        [userId, orderNumber, totalAmount, 'pending', addressStr]
       );
       
-      const orderId = orderResult.lastInsertRowId;
+      console.log('Order result:', orderResult);
+      
+      // Get the inserted order ID
+      const orderId = orderResult.lastInsertRowId || orderResult.insertId;
+      
+      if (!orderId) {
+        console.error('No order ID returned from insert');
+        throw new Error('Failed to get order ID');
+      }
+      
+      console.log('Order created with ID:', orderId);
       
       // Add order items
       for (const item of cartItems) {
+        console.log('Adding order item:', item.id, item.title);
         await database.runAsync(
           `INSERT INTO order_items (order_id, product_id, title, price, quantity, image)
            VALUES (?, ?, ?, ?, ?, ?)`,
@@ -448,12 +468,17 @@ const orderOperations = {
         );
       }
       
+      console.log('All order items added');
+      
       // Clear cart
       await cartOperations.clearCart(userId);
+      
+      console.log('Cart cleared, order complete');
       
       return { id: orderId, orderNumber };
     } catch (error) {
       console.error('Error creating order:', error);
+      console.error('Error details:', error.message, error.stack);
       throw error;
     }
   },
