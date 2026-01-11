@@ -9,6 +9,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Modal,
+  TextInput,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCart } from '../context/CartContext';
@@ -31,12 +34,29 @@ const CartScreen = ({ navigation }) => {
   const { user } = useAuth();
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
   const [shippingCost, setShippingCost] = useState(0);
+  const [shippingAddress, setShippingAddress] = useState(null);
+  const [showShippingModal, setShowShippingModal] = useState(false);
+  const [tempAddress, setTempAddress] = useState('');
+  const [tempCity, setTempCity] = useState('');
+  const [tempState, setTempState] = useState('');
+  const [tempZipCode, setTempZipCode] = useState('');
+  const [tempCountry, setTempCountry] = useState('USA');
   const TAX_RATE = 0.08; // 8% tax
 
-  // Load default payment method
+  // Load default payment method and clear when user changes
   useEffect(() => {
-    loadDefaultPaymentMethod();
-  }, [user]);
+    // Clear payment method immediately when user changes
+    setSelectedPaymentMethod(null);
+    setShippingAddress(null);
+    
+    if (user?.id) {
+      // Small delay to ensure state is cleared before loading new data
+      const timer = setTimeout(() => {
+        loadDefaultPaymentMethod();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [user?.id]);
 
   // Calculate shipping cost
   useEffect(() => {
@@ -58,9 +78,76 @@ const CartScreen = ({ navigation }) => {
         if (defaultMethod) {
           setSelectedPaymentMethod(defaultMethod);
         }
+        
+        // Load shipping address from user profile
+        const userData = await database.user.getUserById(user.id);
+        if (userData?.address) {
+          try {
+            const parsedAddress = JSON.parse(userData.address);
+            setShippingAddress(parsedAddress);
+          } catch {
+            setShippingAddress({ address: userData.address });
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading payment method:', error);
+    }
+  };
+
+  const handleEditShippingAddress = () => {
+    // Pre-fill form with existing address if available
+    if (shippingAddress) {
+      setTempAddress(shippingAddress.address || '');
+      setTempCity(shippingAddress.city || '');
+      setTempState(shippingAddress.state || '');
+      setTempZipCode(shippingAddress.zipCode || '');
+      setTempCountry(shippingAddress.country || 'USA');
+    }
+    setShowShippingModal(true);
+  };
+
+  const handleSaveShippingAddress = async () => {
+    // Validate fields
+    if (!tempAddress.trim()) {
+      Alert.alert('Error', 'Please enter your street address');
+      return;
+    }
+    if (!tempCity.trim()) {
+      Alert.alert('Error', 'Please enter your city');
+      return;
+    }
+    if (!tempZipCode.trim()) {
+      Alert.alert('Error', 'Please enter your zip/postal code');
+      return;
+    }
+    if (!tempCountry.trim()) {
+      Alert.alert('Error', 'Please enter your country');
+      return;
+    }
+
+    try {
+      const newShippingAddress = {
+        address: tempAddress.trim(),
+        city: tempCity.trim(),
+        state: tempState.trim(),
+        zipCode: tempZipCode.trim(),
+        country: tempCountry.trim(),
+      };
+
+      // Save to database
+      await database.user.updateUser(user.id, {
+        address: JSON.stringify(newShippingAddress),
+      });
+
+      // Update local state
+      setShippingAddress(newShippingAddress);
+      setShowShippingModal(false);
+      
+      Alert.alert('Success', 'Shipping address saved!');
+    } catch (error) {
+      console.error('Error saving shipping address:', error);
+      Alert.alert('Error', 'Failed to save shipping address');
     }
   };
 
@@ -124,6 +211,25 @@ const CartScreen = ({ navigation }) => {
       return;
     }
 
+    // Check if shipping address is provided
+    if (!shippingAddress || !shippingAddress.address) {
+      Alert.alert(
+        'No Shipping Address',
+        'Please add a shipping address to continue',
+        [
+          {
+            text: 'Add Address',
+            onPress: handleEditShippingAddress,
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+        ]
+      );
+      return;
+    }
+
     // Check if payment method is selected
     if (!selectedPaymentMethod) {
       Alert.alert(
@@ -146,11 +252,11 @@ const CartScreen = ({ navigation }) => {
     const subtotal = getCartTotal() || 0;
     const tax = subtotal * TAX_RATE;
     const grandTotal = subtotal + shippingCost + tax;
-    const shippingAddress = user.address || '123 Main St, New York, USA';
+    const displayAddress = `${shippingAddress.address}, ${shippingAddress.city}, ${shippingAddress.zipCode}, ${shippingAddress.country}`;
 
     Alert.alert(
       'Confirm Order',
-      `SHIPPING ADDRESS:\n${shippingAddress}\n\nORDER SUMMARY:\nSubtotal: $${subtotal.toFixed(2)}\nShipping: ${shippingCost === 0 ? 'FREE' : '$' + shippingCost.toFixed(2)}\nTax (8%): $${tax.toFixed(2)}\nTotal: $${grandTotal.toFixed(2)}\n\nPAYMENT METHOD:\n${selectedPaymentMethod?.cardType?.toUpperCase() || 'CARD'} •••• ${selectedPaymentMethod?.cardNumber?.slice(-4) || '****'}`,
+      `SHIPPING ADDRESS:\n${displayAddress}\n\nORDER SUMMARY:\nSubtotal: $${subtotal.toFixed(2)}\nShipping: ${shippingCost === 0 ? 'FREE' : '$' + shippingCost.toFixed(2)}\nTax (8%): $${tax.toFixed(2)}\nTotal: $${grandTotal.toFixed(2)}\n\nPAYMENT METHOD:\n${selectedPaymentMethod?.cardType?.toUpperCase() || 'CARD'} •••• ${selectedPaymentMethod?.cardNumber?.slice(-4) || '****'}`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -159,11 +265,7 @@ const CartScreen = ({ navigation }) => {
             try {
               const result = await createOrder(
                 user.id,
-                {
-                  address: user.address || '123 Main St',
-                  city: 'New York',
-                  country: 'USA',
-                },
+                shippingAddress,
                 selectedPaymentMethod.id
               );
 
@@ -272,6 +374,32 @@ const CartScreen = ({ navigation }) => {
 
     return (
       <View style={styles.footer}>
+        {/* Shipping Address Section */}
+        <TouchableOpacity
+          style={styles.shippingAddressContainer}
+          onPress={handleEditShippingAddress}
+          activeOpacity={0.7}
+        >
+          <View style={styles.paymentMethodHeader}>
+            <Ionicons name="location-outline" size={24} color="#5B21B6" />
+            <Text style={styles.paymentMethodLabel}>Shipping Address</Text>
+          </View>
+          
+          {shippingAddress ? (
+            <View style={styles.selectedPaymentInfo}>
+              <Text style={styles.shippingAddressText} numberOfLines={2}>
+                {shippingAddress.address || ''}, {shippingAddress.city || ''}, {shippingAddress.zipCode || ''}, {shippingAddress.country || ''}
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color="#999" />
+            </View>
+          ) : (
+            <View style={styles.addPaymentPrompt}>
+              <Text style={styles.addPaymentText}>Add shipping address</Text>
+              <Ionicons name="chevron-forward" size={20} color="#5B21B6" />
+            </View>
+          )}
+        </TouchableOpacity>
+
         {/* Payment Method Section */}
         <TouchableOpacity
           style={styles.paymentMethodContainer}
@@ -355,6 +483,92 @@ const CartScreen = ({ navigation }) => {
         ListEmptyComponent={renderEmptyCart}
         ListFooterComponent={renderFooter}
       />
+
+      {/* Shipping Address Modal */}
+      <Modal
+        visible={showShippingModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowShippingModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setShowShippingModal(false)}>
+              <Text style={styles.cancelButton}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Shipping Address</Text>
+            <View style={{ width: 60 }} />
+          </View>
+
+          <ScrollView style={styles.modalContent}>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Street Address *</Text>
+              <TextInput
+                style={styles.input}
+                value={tempAddress}
+                onChangeText={setTempAddress}
+                placeholder="123 Main Street"
+                autoCapitalize="words"
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>City *</Text>
+              <TextInput
+                style={styles.input}
+                value={tempCity}
+                onChangeText={setTempCity}
+                placeholder="New York"
+                autoCapitalize="words"
+              />
+            </View>
+
+            <View style={styles.row}>
+              <View style={[styles.formGroup, styles.flex1]}>
+                <Text style={styles.label}>State/Province</Text>
+                <TextInput
+                  style={styles.input}
+                  value={tempState}
+                  onChangeText={setTempState}
+                  placeholder="NY"
+                  autoCapitalize="characters"
+                  maxLength={3}
+                />
+              </View>
+
+              <View style={[styles.formGroup, styles.flex1, styles.ml]}>
+                <Text style={styles.label}>Zip/Postal Code *</Text>
+                <TextInput
+                  style={styles.input}
+                  value={tempZipCode}
+                  onChangeText={setTempZipCode}
+                  placeholder="10001"
+                  keyboardType="numeric"
+                  maxLength={10}
+                />
+              </View>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Country *</Text>
+              <TextInput
+                style={styles.input}
+                value={tempCountry}
+                onChangeText={setTempCountry}
+                placeholder="USA"
+                autoCapitalize="characters"
+              />
+            </View>
+
+            <View style={styles.modalFooter}>
+              <Button
+                title="Save Address"
+                onPress={handleSaveShippingAddress}
+              />
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -570,6 +784,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e9d5ff',
   },
+  shippingAddressContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e9d5ff',
+  },
+  shippingAddressText: {
+    fontSize: 14,
+    color: '#1f2937',
+    flex: 1,
+    marginRight: 8,
+  },
   paymentMethodHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -602,6 +830,62 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#5B21B6',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  cancelButton: {
+    fontSize: 16,
+    color: '#007AFF',
+  },
+  modalContent: {
+    flex: 1,
+    padding: 16,
+  },
+  formGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  row: {
+    flexDirection: 'row',
+  },
+  flex1: {
+    flex: 1,
+  },
+  ml: {
+    marginLeft: 12,
+  },
+  modalFooter: {
+    marginTop: 24,
+    marginBottom: 40,
   },
 });
 

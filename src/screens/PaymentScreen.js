@@ -31,12 +31,52 @@ const PaymentScreen = ({ navigation, route }) => {
   const [cvv, setCvv] = useState('');
   const [isDefault, setIsDefault] = useState(false);
 
+  // Shipping information state
+  const [shippingAddress, setShippingAddress] = useState('');
+  const [shippingCity, setShippingCity] = useState('');
+  const [shippingState, setShippingState] = useState('');
+  const [shippingZipCode, setShippingZipCode] = useState('');
+  const [shippingCountry, setShippingCountry] = useState('USA');
+
   // Get params from navigation (if coming from checkout)
   const { fromCheckout, onPaymentSelected } = route.params || {};
 
   useEffect(() => {
-    loadPaymentMethods();
-  }, []);
+    // Clear payment methods immediately when user changes
+    setPaymentMethods([]);
+    setSelectedPaymentId(null);
+    
+    if (user?.id) {
+      // Small delay to ensure state is cleared before loading new data
+      const timer = setTimeout(() => {
+        loadPaymentMethods();
+        loadUserShippingAddress();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [user?.id]);
+
+  const loadUserShippingAddress = async () => {
+    try {
+      if (user?.id) {
+        const userData = await database.user.getUserById(user.id);
+        if (userData?.address) {
+          try {
+            const parsedAddress = JSON.parse(userData.address);
+            setShippingAddress(parsedAddress.address || '');
+            setShippingCity(parsedAddress.city || '');
+            setShippingState(parsedAddress.state || '');
+            setShippingZipCode(parsedAddress.zipCode || '');
+            setShippingCountry(parsedAddress.country || 'USA');
+          } catch (e) {
+            console.log('Could not parse address');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading shipping address:', error);
+    }
+  };
 
   const loadPaymentMethods = async () => {
     try {
@@ -142,6 +182,27 @@ const PaymentScreen = ({ navigation, route }) => {
       return false;
     }
 
+    // Validate shipping information
+    if (!shippingAddress.trim()) {
+      Alert.alert('Error', 'Please enter your shipping address');
+      return false;
+    }
+
+    if (!shippingCity.trim()) {
+      Alert.alert('Error', 'Please enter your city');
+      return false;
+    }
+
+    if (!shippingZipCode.trim()) {
+      Alert.alert('Error', 'Please enter your zip/postal code');
+      return false;
+    }
+
+    if (!shippingCountry.trim()) {
+      Alert.alert('Error', 'Please enter your country');
+      return false;
+    }
+
     return true;
   };
 
@@ -165,7 +226,24 @@ const PaymentScreen = ({ navigation, route }) => {
 
       await database.paymentMethod.addPaymentMethod(user.id, paymentData);
       
-      Alert.alert('Success', 'Payment method added successfully');
+      // Save shipping address to user profile
+      try {
+        const shippingInfo = {
+          address: shippingAddress.trim(),
+          city: shippingCity.trim(),
+          state: shippingState.trim(),
+          zipCode: shippingZipCode.trim(),
+          country: shippingCountry.trim(),
+        };
+        
+        await database.user.updateUser(user.id, {
+          address: JSON.stringify(shippingInfo),
+        });
+      } catch (shippingError) {
+        console.error('Error saving shipping info:', shippingError);
+      }
+      
+      Alert.alert('Success', 'Payment method and shipping address saved!');
       
       // Reset form
       setCardHolderName('');
@@ -174,6 +252,11 @@ const PaymentScreen = ({ navigation, route }) => {
       setExpiryYear('');
       setCvv('');
       setIsDefault(false);
+      setShippingAddress('');
+      setShippingCity('');
+      setShippingState('');
+      setShippingZipCode('');
+      setShippingCountry('USA');
       setShowAddCard(false);
       
       // Reload payment methods
@@ -363,6 +446,72 @@ const PaymentScreen = ({ navigation, route }) => {
               </View>
             </View>
 
+            {/* Shipping Information Section */}
+            <View style={styles.sectionDivider}>
+              <Text style={styles.sectionTitle}>Shipping Address</Text>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Street Address</Text>
+              <TextInput
+                style={styles.input}
+                value={shippingAddress}
+                onChangeText={setShippingAddress}
+                placeholder="123 Main Street"
+                autoCapitalize="words"
+              />
+            </View>
+
+            <View style={styles.row}>
+              <View style={[styles.formGroup, styles.flex1]}>
+                <Text style={styles.label}>City</Text>
+                <TextInput
+                  style={styles.input}
+                  value={shippingCity}
+                  onChangeText={setShippingCity}
+                  placeholder="New York"
+                  autoCapitalize="words"
+                />
+              </View>
+
+              <View style={[styles.formGroup, styles.flex1, styles.ml]}>
+                <Text style={styles.label}>State/Province</Text>
+                <TextInput
+                  style={styles.input}
+                  value={shippingState}
+                  onChangeText={setShippingState}
+                  placeholder="NY"
+                  autoCapitalize="characters"
+                  maxLength={3}
+                />
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <View style={[styles.formGroup, styles.flex1]}>
+                <Text style={styles.label}>Zip/Postal Code</Text>
+                <TextInput
+                  style={styles.input}
+                  value={shippingZipCode}
+                  onChangeText={setShippingZipCode}
+                  placeholder="10001"
+                  keyboardType="numeric"
+                  maxLength={10}
+                />
+              </View>
+
+              <View style={[styles.formGroup, styles.flex1, styles.ml]}>
+                <Text style={styles.label}>Country</Text>
+                <TextInput
+                  style={styles.input}
+                  value={shippingCountry}
+                  onChangeText={setShippingCountry}
+                  placeholder="USA"
+                  autoCapitalize="characters"
+                />
+              </View>
+            </View>
+
             {paymentMethods.length > 0 && (
               <TouchableOpacity
                 style={styles.checkboxContainer}
@@ -514,6 +663,20 @@ const styles = StyleSheet.create({
   modalFooter: {
     marginTop: 24,
     marginBottom: 40,
+  },
+  sectionDivider: {
+    marginTop: 8,
+    marginBottom: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#5B21B6',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });
 

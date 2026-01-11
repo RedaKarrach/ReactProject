@@ -531,13 +531,36 @@ const orderOperations = {
         [userId]
       );
       
-      // Get items for each order
+      // Get items and payment info for each order
       const ordersWithItems = await Promise.all(
         orders.map(async (order) => {
           const items = await database.getAllAsync(
             'SELECT * FROM order_items WHERE order_id = ?',
             [order.id]
           );
+          
+          // Get payment information
+          let paymentInfo = null;
+          try {
+            const payment = await database.getFirstAsync(
+              `SELECT p.*, pm.card_type, pm.card_number, pm.card_holder_name 
+               FROM payments p 
+               LEFT JOIN payment_methods pm ON p.payment_method_id = pm.id 
+               WHERE p.order_id = ?`,
+              [order.id]
+            );
+            if (payment) {
+              paymentInfo = {
+                cardType: payment.card_type,
+                cardNumber: payment.card_number,
+                cardHolderName: payment.card_holder_name,
+                amount: payment.amount,
+                status: payment.status,
+              };
+            }
+          } catch (paymentError) {
+            console.log('No payment info for order:', order.id);
+          }
           
           return {
             id: order.id,
@@ -546,6 +569,7 @@ const orderOperations = {
             status: order.status,
             shippingAddress: order.shipping_address,
             createdAt: order.created_at,
+            paymentMethod: paymentInfo,
             items: items.map(item => ({
               id: item.product_id,
               title: item.title,

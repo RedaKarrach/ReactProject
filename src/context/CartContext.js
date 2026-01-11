@@ -37,13 +37,18 @@ export const CartProvider = ({ children }) => {
    * Load cart from database when user changes
    */
   useEffect(() => {
+    // Clear cart items immediately when user changes
+    setCartItems([]);
+    setLoading(true);
+    
     if (user && user.id) {
       loadCartFromDatabase();
     } else {
-      // No user, use local storage fallback
-      loadCart();
+      // No user logged in, clear cart
+      setCartItems([]);
+      setLoading(false);
     }
-  }, [user]);
+  }, [user?.id]);
 
   /**
    * Load cart from database

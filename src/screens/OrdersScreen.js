@@ -13,27 +13,47 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
-import { ordersStorage } from '../services/storage';
+import { useAuth } from '../context/AuthContext';
+import database from '../services/database';
 import Header from '../components/Header';
 import Loader from '../components/Loader';
 
 
 const OrdersScreen = () => {
+  const { user } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    loadOrders();
-  }, []);
+    // Clear orders immediately when user changes
+    setOrders([]);
+    setLoading(true);
+    
+    if (user?.id) {
+      // Small delay to ensure state is cleared before loading new data
+      const timer = setTimeout(() => {
+        loadOrders();
+      }, 100);
+      return () => clearTimeout(timer);
+    } else {
+      setLoading(false);
+    }
+  }, [user?.id]);
 
   
   const loadOrders = async () => {
     try {
-      const storedOrders = await ordersStorage.getOrders();
-      setOrders(storedOrders);
+      if (user && user.id) {
+        const userOrders = await database.order.getUserOrders(user.id);
+        console.log('Loaded orders:', userOrders);
+        setOrders(userOrders);
+      } else {
+        setOrders([]);
+      }
     } catch (error) {
       console.error('Error loading orders:', error);
+      setOrders([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -48,14 +68,20 @@ const OrdersScreen = () => {
 
  
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Invalid Date';
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch (error) {
+      return 'Invalid Date';
+    }
   };
 
  
@@ -84,19 +110,19 @@ const OrdersScreen = () => {
       {/* Order Header */}
       <View style={styles.orderHeader}>
         <View>
-          <Text style={styles.orderId}>Order #{item.id}</Text>
+          <Text style={styles.orderId}>Order #{item.orderNumber || item.id || 'N/A'}</Text>
           <Text style={styles.orderDate}>{formatDate(item.createdAt)}</Text>
         </View>
         <View
           style={[
             styles.statusBadge,
-            { backgroundColor: getStatusColor(item.status) + '20' },
+            { backgroundColor: getStatusColor(item.status || 'pending') + '20' },
           ]}
         >
           <Text
             style={[
               styles.statusText,
-              { color: getStatusColor(item.status) },
+              { color: getStatusColor(item.status || 'pending') },
             ]}
           >
             {item.status ? item.status.charAt(0).toUpperCase() + item.status.slice(1) : 'Pending'}
@@ -108,12 +134,22 @@ const OrdersScreen = () => {
       <View style={styles.orderDetails}>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Items:</Text>
-          <Text style={styles.detailValue}>{item.itemCount}</Text>
+          <Text style={styles.detailValue}>{item.items?.length || 0}</Text>
         </View>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Total:</Text>
-          <Text style={styles.detailValueBold}>${item.total ? item.total.toFixed(2) : item.totalAmount ? item.totalAmount.toFixed(2) : '0.00'}</Text>
+          <Text style={styles.detailValueBold}>
+            ${(item.totalAmount || item.total || 0).toFixed(2)}
+          </Text>
         </View>
+        {item.paymentMethod && (
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Payment:</Text>
+            <Text style={styles.detailValue}>
+              {item.paymentMethod.cardType?.toUpperCase() || 'CARD'} •••• {item.paymentMethod.cardNumber?.slice(-4) || '****'}
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Order Items Preview */}

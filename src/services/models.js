@@ -12,22 +12,43 @@ export const UserModel = {
    */
   register: async (email, password, username = null) => {
     try {
+      console.log('=== STARTING REGISTRATION ===');
+      console.log('Email:', email);
+      console.log('Username:', username);
+      
       // Check if user already exists
       const existingUser = await database.user.getUserByEmail(email);
       if (existingUser) {
+        console.log('User already exists');
         throw new Error('User already exists');
       }
 
       // Hash password (simple hash for demo - use bcrypt in production)
       const hashedPassword = await hashPassword(password);
+      console.log('Password hashed successfully');
       
       // Create user
       const userId = await database.user.createUser(email, hashedPassword, username);
+      console.log('User created with ID:', userId);
+      
+      if (!userId) {
+        console.error('Failed to create user - no ID returned');
+        throw new Error('Failed to create user');
+      }
       
       // Get created user
       const user = await database.user.getUserById(userId);
+      console.log('Retrieved user from database:', user);
+      
+      if (!user) {
+        console.error('User created but could not be retrieved');
+        throw new Error('User created but could not be retrieved');
+      }
+      
+      console.log('=== REGISTRATION SUCCESSFUL ===');
       return user;
     } catch (error) {
+      console.error('=== REGISTRATION FAILED ===');
       console.error('Error registering user:', error);
       throw error;
     }
